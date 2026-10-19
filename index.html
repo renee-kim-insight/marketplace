@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agent Marketplace (AI COE)</title>
+<!--
+  Agent Marketplace (AI COE)  |  Insight AIDS 0.8.3  |  ONE FILE, NO EXTERNAL REQUESTS
+  Built from the Figma file "Internal Marketplace" (Home, Browse, Submit a tool, My items).
+
+  SharePoint Online can block inline scripts (CSP), so everything is plain HTML + CSS. One small optional
+  script at the bottom adds live search, the sticky shadow and closes the phone menu. If it is blocked,
+  search hides itself and everything else still works.
+    - Pages switch with hidden radio buttons + CSS
+    - Browse filters + sort use CSS :has() (needs a current browser)
+    - Hearts are checkboxes; My items shows the ones ticked on Browse
+
+  THINGS YOU WILL WANT TO EDIT (search for "EDIT:")
+    1. Deploy / Open links
+    2. The form, so submissions go somewhere real
+    3. The account button (name, initials, menu links)
+    4. The tool image + icons (inline SVG approximations, see the <symbol> block)
+-->
+<style>
+/* ---------- Insight AIDS 0.8.3 tokens (insight.aids.json). Raw Hunger is for gradients only; text, strokes and fills use --accent. ---------- */
+:root{
+  --clarity:#F5F5F5; --calm:#E0E0E0; --cloud:#BDBDBD; --carbon:#3E332D; --mid-grey:#727272; --white:#FFFFFF;
+  --hunger:#E6008F; --accent:#D40684; --heart:#B01C87; --harmony:#5F2376; --vision:#4D92D0;
+  --hunger-sheer:#FFF2FD; --hunger-lite:#F8D5F8; --harmony-sheer:#EFEDFE; --harmony-lite:#E8DAFF;
+  --disabled-fg:#B6B1AF; --error:#D30C55;
+  --text-scrim:rgba(62,51,45,.25);
+  --shadow-sm:0 1px 3px rgba(62,51,45,.10),0 1px 2px rgba(62,51,45,.06);
+  --shadow-md:0 4px 8px rgba(62,51,45,.10),0 2px 4px rgba(62,51,45,.06);
+  --focus:0 0 0 2px #FFFFFF,0 0 0 4px #5F2376;
+  --page-inline:40px; /* layout.pageInline: 40 desktop and tablet, 16 phone. Lower it if SharePoint adds its own page padding. */
+  --font:"Greycliff CF",Arial,Helvetica,sans-serif;
+  --fast:120ms cubic-bezier(.2,0,0,1);
+}
+@media (max-width:599px){:root{--page-inline:16px}}
+
+*,*::before,*::after{box-sizing:border-box;letter-spacing:-.04em}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--clarity);color:var(--carbon);font-family:var(--font);font-size:16px;line-height:24px;font-weight:400;-webkit-font-smoothing:antialiased;font-variant-numeric:proportional-nums lining-nums}
+h1,h2,h3,p,ol,ul{margin:0;padding:0}
+ol,ul{list-style:none}
+em,i,cite,address{font-style:normal}
+button,input,select,option,textarea{font:inherit;letter-spacing:inherit;color:inherit}
+a{color:inherit;text-decoration:none}
+svg{display:block;flex:none}
+label{cursor:pointer}
+:focus{outline:none}
+:focus-visible{outline:none;box-shadow:var(--focus)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{transition:none!important;animation:none!important;scroll-behavior:auto!important}}
+
+/* ---------- Type steps (typography.scale) ---------- */
+.overline{font-size:14px;line-height:20px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--accent)}
+.meta{font-size:14px;line-height:20px;color:var(--mid-grey)}
+
+/* ---------- Page switcher (hidden radios) ---------- */
+.route{position:absolute;top:0;left:0;width:1px;height:1px;opacity:0;margin:0;pointer-events:none}
+.view{display:none}
+#pg-home:checked ~ main #home,#pg-browse:checked ~ main #browse,#pg-submit:checked ~ main #submit,
+#pg-thanks:checked ~ main #thanks,#pg-mine:checked ~ main #mine{display:block}
+
+/* ---------- Navbar: two tier header, 112px (agentDirectives.navbarSpec) ---------- */
+/* The whole header is sticky with top:-56px, so the brand row scrolls away and the destination row stays. */
+.navbar{position:sticky;top:-56px;z-index:1100}
+.brand-row{height:56px;background:var(--white);padding:0 var(--page-inline);display:flex;align-items:center;gap:16px}
+.brand{display:flex;align-items:center;gap:12px;min-width:0;flex:1}
+.brand__name{font-size:18px;line-height:24px;font-weight:600;color:var(--carbon);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.utility{display:flex;align-items:center;gap:16px;flex:none}
+.dest-row{min-height:56px;padding:8px var(--page-inline);background:var(--clarity);box-shadow:inset 0 1px 0 var(--calm);display:flex;align-items:center;gap:8px;transition:box-shadow var(--fast)}
+.navbar.is-stuck .dest-row{box-shadow:inset 0 1px 0 var(--calm),var(--shadow-sm)}
+.nav-item{position:relative;display:inline-flex;align-items:center;height:40px;padding:0 20px;border-radius:999px;font-size:16px;line-height:24px;font-weight:600;color:var(--carbon);white-space:nowrap;transition:background var(--fast),color var(--fast)}
+.nav-item::after{content:"";position:absolute;inset:-2px 0}
+.nav-item:hover{background:var(--white)}
+#pg-home:checked ~ header .nav-item[for="pg-home"],
+#pg-browse:checked ~ header .nav-item[for="pg-browse"],
+#pg-submit:checked ~ header .nav-item[for="pg-submit"],
+#pg-thanks:checked ~ header .nav-item[for="pg-submit"],
+#pg-mine:checked ~ header .nav-item[for="pg-mine"]{background:var(--accent);color:var(--white)}
+#pg-home:focus-visible ~ header .nav-item[for="pg-home"],
+#pg-browse:focus-visible ~ header .nav-item[for="pg-browse"],
+#pg-submit:focus-visible ~ header .nav-item[for="pg-submit"],
+#pg-mine:focus-visible ~ header .nav-item[for="pg-mine"]{box-shadow:var(--focus)}
+
+/* Account trigger: one line, 40px, Avatar + name + chevron. EDIT: SharePoint fills the real person. */
+.account{position:relative}
+.account__btn{list-style:none;display:flex;align-items:center;gap:8px;height:40px;padding:0 12px 0 4px;border:1px solid var(--calm);border-radius:999px;background:var(--white);font-size:14px;line-height:20px;font-weight:500;cursor:pointer;transition:background var(--fast)}
+.account__btn::-webkit-details-marker{display:none}
+.account__btn:hover{background:var(--clarity)}
+.account__btn:focus-visible{box-shadow:var(--focus)}
+.avatar{width:32px;height:32px;border-radius:999px;background:var(--harmony-sheer);color:var(--harmony);display:grid;place-items:center;font-size:14px;line-height:20px;font-weight:600}
+.chev{width:16px;height:16px;color:var(--carbon);transition:transform var(--fast)}
+.account[open] .chev{transform:rotate(180deg)}
+.menu{position:absolute;right:0;top:48px;z-index:1000;min-width:200px;padding:4px 0;background:var(--white);border:1px solid var(--calm);border-radius:8px;box-shadow:var(--shadow-md)}
+.menu a{display:flex;align-items:center;min-height:44px;padding:0 16px;font-size:14px;line-height:20px;font-weight:500}
+.menu a:hover{background:var(--clarity)}
+.menu hr{border:0;height:1px;background:var(--calm);margin:4px 0}
+.menu__meta{padding:8px 16px;font-size:14px;line-height:20px;color:var(--mid-grey)}
+
+/* Phone: destination row becomes a drawer opened from a named IconButton in the brand row */
+.nav-toggle{display:none;position:relative;width:40px;height:40px;border-radius:999px;align-items:center;justify-content:center;color:var(--harmony);transition:background var(--fast)}
+.nav-toggle::after{content:"";position:absolute;inset:-2px}
+.nav-toggle:hover{background:var(--clarity)}
+.nav-toggle svg{width:20px;height:20px}
+#nav-open:focus-visible ~ header .nav-toggle{box-shadow:var(--focus)}
+@media (max-width:767px){
+  .nav-toggle{display:inline-flex}
+  .dest-row{display:none;flex-direction:column;align-items:stretch;padding:8px var(--page-inline) 16px}
+  #nav-open:checked ~ header .dest-row{display:flex}
+  .nav-item{justify-content:flex-start}
+}
+@media (max-width:599px){.account__name{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)} .account__btn{padding-right:8px}}
+
+/* ---------- Layout ---------- */
+.wrap{width:100%;padding:0 var(--page-inline)}
+.stack{display:flex;flex-direction:column;gap:40px;padding-top:40px;padding-bottom:40px}
+.section{display:flex;flex-direction:column;gap:20px}
+.section__head{display:flex;align-items:center;justify-content:space-between;gap:16px}
+.section__title{display:flex;align-items:center;gap:12px;font-size:24px;line-height:32px;font-weight:600}
+.section__title svg{width:16px;height:16px;color:var(--accent)}
+/* Link, accent variant (See all) */
+.see-all{position:relative;color:var(--accent);font-size:16px;line-height:24px;font-weight:600;border-radius:4px}
+.see-all::before{content:"";position:absolute;inset:-10px -4px}
+.see-all::after{content:" \203A"}
+.see-all:hover{text-decoration:underline}
+
+/* ---------- PageHeader band (gradient.emphasis + textScrim) ---------- */
+.band{color:var(--white);padding:40px 0;background-image:linear-gradient(var(--text-scrim),var(--text-scrim)),linear-gradient(90deg,var(--hunger),var(--vision))}
+.band .wrap{display:flex;flex-direction:column;gap:8px}
+.band--hero .wrap{gap:12px}
+.band .overline{color:var(--white)}
+.band h1{font-size:28px;line-height:36px;font-weight:600}
+/* PageHeader hero (0.7.5, home page only): white overline eyebrow, display2xl title, bodyLg subtitle, 12px apart. Title drops to displayXl on phones (OD-8). */
+.band--hero h1{font-size:48px;line-height:56px;font-weight:700}
+@media (max-width:599px){.band--hero h1{font-size:40px;line-height:48px}}
+.band .lede{max-width:740px;font-size:18px;line-height:28px}
+.back{position:relative;align-self:flex-start;display:inline-flex;align-items:center;gap:8px;font-size:14px;line-height:20px;font-weight:500;border-radius:4px}
+.back::after{content:"";position:absolute;inset:-12px -4px}
+.back:hover{text-decoration:underline}
+.back svg{width:16px;height:16px}
+
+/* ---------- Cards (0.8.0): white with a 1px Calm border. No hover, except a clickable card (.card--link): Hunger border + shadow.md ---------- */
+.card{position:relative;background:var(--white);border:1px solid var(--calm);border-radius:12px;padding:32px;display:flex;flex-direction:column;gap:12px;transition:border-color var(--fast),box-shadow var(--fast)}
+.card--link:hover,.card--link:has(:focus-visible){border-color:var(--accent);box-shadow:var(--shadow-md)}
+.card__top{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.card__title{font-size:18px;line-height:24px;font-weight:600;color:var(--carbon)}
+.card__text{display:flex;flex-direction:column;gap:8px;min-width:0;flex:1}
+.card__body{display:flex;gap:20px;align-items:flex-start}
+.card__logo{width:40px;height:40px}
+.card--lg .card__body{flex-direction:column;gap:20px}
+.divider{height:1px;background:var(--calm);border:0;margin:12px 0 0;width:100%}
+.card > .divider{margin-top:auto;padding-top:0}
+.card__foot{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px}
+.stats{display:flex;align-items:center;flex-wrap:wrap;gap:16px;font-size:14px;line-height:20px;color:var(--mid-grey)}
+.stat{display:inline-flex;align-items:center;gap:4px;white-space:nowrap}
+.stat svg{width:16px;height:16px;color:var(--accent);fill:none}
+
+/* ---------- Tag, Harmony family (color.tag.harmony) ---------- */
+.tags{display:flex;flex-wrap:wrap;gap:8px}
+.tag{display:inline-flex;align-items:center;padding:2px 12px;border-radius:999px;background:var(--harmony-sheer);box-shadow:inset 0 0 0 1px var(--harmony-lite);color:var(--harmony);font-size:14px;line-height:20px;font-weight:500;white-space:nowrap}
+
+/* ---------- Buttons (pill, md: 24 x 6 padding, 1px border, labelLg, 44px hit area) ---------- */
+.btn{user-select:none;-webkit-user-select:none;position:relative;display:inline-flex;align-items:center;justify-content:center;gap:8px;border:1px solid transparent;border-radius:999px;padding:6px 24px;font-size:16px;line-height:24px;font-weight:600;white-space:nowrap;cursor:pointer;transition:background var(--fast),color var(--fast),border-color var(--fast)}
+.btn::after{content:"";position:absolute;inset:-4px 0}
+.btn-solid{background:var(--accent);border-color:var(--accent);color:var(--white)}
+.btn-solid:hover{background:var(--heart);border-color:var(--heart)}
+.btn-solid:active{background:var(--harmony);border-color:var(--harmony)}
+.btn-outline{background:transparent;border-color:var(--accent);color:var(--accent)}
+.btn-outline:hover{background:var(--accent);color:var(--white)}
+.btn-outline:active{background:var(--heart);border-color:var(--heart);color:var(--white)}
+.btn-secondary{background:transparent;border-color:var(--harmony);color:var(--harmony)}
+.btn-secondary:hover{background:var(--harmony);color:var(--white)}
+.btn-secondary:active{background:#5B256D;color:var(--white)}
+.btn-tertiary{background:transparent;color:var(--harmony);padding:4px 16px;font-size:14px;line-height:20px;font-weight:500}
+.btn-tertiary:hover{background:var(--white)}
+.btn-tertiary::after{inset:-10px 0}
+
+/* ---------- Heart toggle ---------- */
+.heart{position:relative;display:block;width:24px;height:24px;flex:none;border-radius:4px}
+.heart__input{position:absolute;top:-10px;left:-10px;width:44px;height:44px;margin:0;opacity:0;cursor:pointer}
+.heart svg{width:24px;height:24px;color:var(--accent);fill:none;pointer-events:none}
+.heart__input:checked + svg,.heart--on svg{fill:var(--accent)}
+.heart:has(.heart__input:focus-visible){box-shadow:var(--focus)}
+label.heart::after{content:"";position:absolute;inset:-10px}
+body:has(#b6:checked) .recent-6 .heart svg,body:has(#b11:checked) .recent-11 .heart svg{fill:var(--accent)}
+
+/* ---------- Home ---------- */
+.grid-lg{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:20px}
+.newest{display:grid;grid-template-columns:minmax(0,491fr) minmax(0,610fr);gap:20px;align-items:start}
+.newest__list{display:flex;flex-direction:column;gap:20px}
+/* Card emphasis (OD-13): Hunger Sheer, 1px Hunger outline. The one thing in this section not to miss. */
+.emphasis{position:sticky;top:76px;background:var(--hunger-sheer);border:1px solid var(--accent);border-radius:12px;padding:32px;display:flex;flex-direction:column;align-items:flex-start;gap:24px}
+.emphasis__text{display:flex;flex-direction:column;gap:12px}
+.emphasis h3{font-size:20px;line-height:28px;font-weight:600}
+.grid-sm{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px}
+.tile__head{display:flex;align-items:center;gap:20px}
+.tile__head svg{height:40px;width:auto;color:var(--accent)}
+.tile__titles{display:flex;flex-direction:column;gap:4px;min-width:0}
+.stretch{cursor:pointer}
+.stretch::after{content:"";position:absolute;inset:0;border-radius:12px}
+
+/* ---------- Forms (FormField, Input, Select, Textarea, Checkbox) ---------- */
+.submit{display:grid;grid-template-columns:minmax(0,621fr) minmax(0,419fr);gap:40px;align-items:start;padding-top:40px;padding-bottom:40px}
+.form{display:flex;flex-direction:column;gap:20px}
+.form__legend{font-size:14px;line-height:20px;color:var(--mid-grey)}
+.form__row{display:flex;gap:20px;align-items:flex-start}
+.field{flex:1;min-width:0;display:flex;flex-direction:column;gap:8px}
+.field__label{display:flex;flex-direction:column;gap:4px;font-size:14px;line-height:20px;font-weight:500;color:var(--carbon)}
+.field__hint{font-size:14px;line-height:20px;font-weight:400;color:var(--mid-grey)}
+.req{color:var(--accent);margin-left:4px;font-weight:600}
+.input,.select,.textarea{width:100%;background:var(--white);border:1px solid var(--cloud);border-radius:8px;font-size:16px;line-height:24px;color:var(--carbon);transition:border-color var(--fast)}
+.input,.select{height:40px;padding:0 12px}
+.textarea{min-height:216px;padding:8px 12px;resize:vertical}
+.input::placeholder,.textarea::placeholder{color:var(--mid-grey);opacity:1}
+.input:hover,.select:hover,.textarea:hover{border-color:var(--carbon)}
+.input:focus-visible,.select:focus-visible,.textarea:focus-visible{border-color:var(--harmony);box-shadow:var(--focus)}
+.input:user-invalid{border-color:var(--error);box-shadow:inset 0 0 0 1px var(--error)}
+.select-wrap{position:relative}
+.select{appearance:none;-webkit-appearance:none;padding-right:44px;cursor:pointer}
+.select-wrap svg{position:absolute;right:12px;top:50%;transform:translateY(-50%);width:20px;height:20px;color:var(--carbon);pointer-events:none}
+.confirm{display:flex;gap:8px;align-items:flex-start;min-height:44px;padding:10px 0;font-size:16px;line-height:24px;color:var(--carbon)}
+.confirm input{accent-color:var(--accent);width:20px;height:20px;margin:2px 0 0;flex:none}
+.confirm input:focus-visible{box-shadow:var(--focus)}
+.field__error{display:none;font-size:14px;line-height:20px;color:var(--error)}
+.input:user-invalid ~ .field__error,.confirm:has(input:user-invalid) + .field__error{display:block}
+.form__actions{display:flex;flex-direction:column;gap:12px;align-items:flex-start}
+.form:invalid .btn-submit{background:var(--calm);border-color:var(--calm);color:var(--disabled-fg);pointer-events:none}
+.form__note{display:none;flex-direction:column;gap:4px;font-size:14px;line-height:20px}
+.form:invalid .form__note{display:flex}
+.form__note-title{font-weight:600}
+.miss{display:none}
+.form:has(#f-name:invalid) .miss-name,.form:has(#f-summary:invalid) .miss-summary,
+.form:has(#f-owner:invalid) .miss-owner,.form:has(#f-confirm:invalid) .miss-confirm{display:block}
+.aside{position:sticky;top:76px;display:flex;flex-direction:column;gap:20px}
+.panel{border-radius:12px;padding:32px;display:flex;flex-direction:column;gap:20px;border:1px solid var(--calm);background:var(--white)}
+.panel--emphasis{background:var(--hunger-sheer);border-color:var(--accent)}
+.panel__title{display:flex;align-items:center;gap:12px;font-size:20px;line-height:28px;font-weight:600}
+.panel__title svg{width:16px;height:16px;color:var(--accent)}
+.steps{display:flex;flex-direction:column;gap:12px;counter-reset:s}
+.steps li{counter-increment:s;display:flex;flex-direction:column;gap:4px}
+.steps strong{font-size:16px;line-height:24px;font-weight:600}
+.steps strong::before{content:counter(s) ". "}
+.steps span{font-size:14px;line-height:20px;color:var(--mid-grey)}
+
+/* ---------- Thanks ---------- */
+.thanks{max-width:621px;margin:40px 0}
+.thanks h2{font-size:20px;line-height:28px;font-weight:600}
+.thanks__actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:12px}
+
+/* ---------- Browse ---------- */
+.browse{counter-reset:vis;display:grid;grid-template-columns:240px minmax(0,1fr);gap:32px;align-items:start;padding-top:40px;padding-bottom:40px}
+.filters{display:flex;flex-direction:column;gap:12px}
+.filters__head{display:flex;justify-content:space-between;align-items:center}
+.filters__head h2{font-size:20px;line-height:28px;font-weight:600}
+.fgroup{border-top:1px solid var(--calm);padding-top:12px;display:flex;flex-direction:column}
+.fgroup__title{font-size:16px;line-height:24px;font-weight:600;padding-bottom:4px}
+.fopt{display:flex;align-items:center;gap:8px;min-height:44px;padding:0 8px;margin:0 -8px;border-radius:8px;font-size:14px;line-height:20px;font-weight:500;transition:background var(--fast)}
+.fopt:hover{background:var(--white)}
+.fopt:has(:focus-visible){box-shadow:var(--focus)}
+.fopt input{accent-color:var(--accent);width:16px;height:16px;margin:0;flex:none}
+.fopt span:first-of-type{flex:1}
+.opt-count{font-weight:400;color:var(--mid-grey);font-variant-numeric:tabular-nums lining-nums}
+.fmore{display:flex;flex-direction:column;border-top:1px solid var(--calm)}
+.fmore summary{list-style:none;display:flex;align-items:center;justify-content:space-between;min-height:44px;padding:0 8px;margin:4px -8px 0;border-radius:999px;color:var(--harmony);font-size:14px;line-height:20px;font-weight:500;cursor:pointer;transition:background var(--fast)}
+.fmore summary::-webkit-details-marker{display:none}
+.fmore summary:hover{background:var(--white)}
+.fmore summary svg{width:16px;height:16px;transition:transform var(--fast)}
+.fmore[open] summary svg{transform:rotate(180deg)}
+.fmore__close,.fmore[open] .fmore__open{display:none}
+.fmore[open] .fmore__close{display:inline}
+.results{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:20px;align-content:start;min-width:0}
+.search{display:none;grid-column:1;grid-row:1;position:relative;margin-bottom:20px;max-width:640px}
+.js .search{display:block}
+.search svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);width:20px;height:20px;color:var(--carbon);pointer-events:none}
+.search .input{padding-left:40px}
+.sortsel{grid-column:2;grid-row:1;display:flex;align-items:center;gap:8px;margin-bottom:20px;font-size:14px;line-height:20px;font-weight:500;cursor:default;white-space:nowrap}
+.sortsel .select-wrap{width:200px}
+.rescount{grid-column:1/-1;grid-row:2;margin-bottom:12px;font-size:14px;line-height:20px;color:var(--mid-grey)}
+.rescount::before{content:counter(vis) " of 15 results"}
+.achips{grid-column:1/-1;grid-row:3;display:none;flex-wrap:wrap;gap:8px;margin-bottom:20px}
+.browse:has(.filters input:checked:not(#fr-all)) .achips{display:flex}
+/* Removable Tag, Harmony family. Hover deepens the fill to Harmony Lite. */
+.achip{display:none;position:relative;align-items:center;gap:4px;padding:2px 8px 2px 12px;border-radius:999px;background:var(--harmony-sheer);box-shadow:inset 0 0 0 1px var(--harmony-lite);color:var(--harmony);font-size:14px;line-height:20px;font-weight:500;white-space:nowrap;transition:background var(--fast)}
+.achip:hover{background:var(--harmony-lite)}
+.achip::after{content:"";position:absolute;inset:-10px 0}
+.achip__x{width:16px;height:16px}
+.results__grid{grid-column:1/-1;grid-row:4;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}
+.item{counter-increment:vis;order:var(--o-pop)}
+.item.nomatch{display:none!important}
+/* EmptyState: white box, 1px Calm, no hover (it is not clickable as a whole) */
+.empty{display:flex;flex-direction:column;align-items:flex-start;gap:12px;border:1px solid var(--calm);border-radius:12px;padding:32px;background:var(--white)}
+.empty h2{font-size:20px;line-height:28px;font-weight:600}
+.noresults{grid-column:1/-1;grid-row:5}
+.noresults[hidden]{display:none}
+.browse:has(.fg-type input:checked):not(:has(#ft-agent:checked)) .item-1{display:none}
+.browse:has(.fg-prob input:checked):not(:has(#fp-productivity:checked)) .item-1{display:none}
+.browse:has(.fg-plat input:checked):not(:has(#fl-azure:checked)) .item-1{display:none}
+.browse:has(.fg-owner input:checked):not(:has(#fo-ai-coe:checked)) .item-1{display:none}
+.browse:has(.fg-cost input:checked):not(:has(#fc-internal:checked)) .item-1{display:none}
+.browse:has(.fg-type input:checked):not(:has(#ft-agent:checked)) .item-2{display:none}
+.browse:has(.fg-prob input:checked):not(:has(#fp-sales:checked)) .item-2{display:none}
+.browse:has(.fg-plat input:checked):not(:has(#fl-copilot:checked)) .item-2{display:none}
+.browse:has(.fg-owner input:checked):not(:has(#fo-sales-enablement:checked)) .item-2{display:none}
+.browse:has(.fg-cost input:checked):not(:has(#fc-internal:checked)) .item-2{display:none}
+.browse:has(.fg-type input:checked):not(:has(#ft-agent:checked)) .item-3{display:none}
+.browse:has(.fg-prob input:checked):not(:has(#fp-finops:checked)) .item-3{display:none}
+.browse:has(.fg-plat input:checked):not(:has(#fl-azure:checked)) .item-3{display:none}
+.browse:has(.fg-owner input:checked):not(:has(#fo-legal-ops:checked)) .item-3{display:none}
+.browse:has(.fg-cost input:checked):not(:has(#fc-internal:checked)) .item-3{display:none}
+.browse:has(.fg-type input:checked):not(:has(#ft-agent:checked)) .item-4{display:none}
+.browse:has(.fg-prob input:checked):not(:has(#fp-support:checked)) .item-4{display:none}
+.browse:has(.fg-plat input:checked):not(:has(#fl-servicenow:checked)):not(:has(#fl-azure:checked)) .item-4{display:none}
+.browse:has(.fg-owner input:checked):not(:has(#fo-managed-services:checked)) .item-4{display:none}
+.browse:has(.fg-cost input:checked):not(:has(#fc-consumption:checked)) .item-4{display:none}
+.browse:has(.fg-type input:checked):not(:has(#ft-model:checked)) .item-5{display:none}
+.browse:has(.fg-prob input:checked):not(:has(#fp-data:checked)) .item-5{display:none}
+.browse:has(.fg-plat input:checked):not(:has(#fl-azure:checked)) .item-5{display:none}
+.browse:has(.fg-owner input:checked):not(:has(#fo-data-science-guild:checked)) .item-5{display:none}
+.browse:has(.fg-cost input:checked):not(:has(#fc-consumption:checked)) .item-5{display:none}
+.browse:has(.fg-type input:checked):not(:has(#ft-model:checked)) .item-6{display:none}
+.browse:has(.fg-prob input:checked):not(:has(#fp-productivity:checked)) .item-6{display:none}
+.browse:has(.fg-plat input:checked):not(:has(#fl-azure:checked)) .item-6{display:none}
+.browse:has(.fg-owner input:checked):not(:has(#fo-ai-coe:checked)) .item-6{display:none}
+.browse:has(.fg-cost input:checked):not(:has(#fc-consumption:checked)) .item-6{display:none}
+.browse:has(.fg-type input:checked):not(:has(#ft-model:checked)) .item-7{display:none}
+.browse:has(.fg-prob input:checked):not(:has(#fp-delivery:checked)) .item-7{display:none}
+.browse:has(.fg-plat input:checked):not(:has(#fl-bedrock:checked)) .item-7{display:none}
+.browse:has(.fg-owner input:checked):not(:has(#fo-cloud-platforms:checked)) .item-7{display:none}
+.browse:has(.fg-cost input:checked):not(:has(#fc-consumption:checked)) .item-7{display:none}
+.browse:has(.fg-type input:checked):not(:has(#ft-tool:checked)) .item-8{display:none}
+.browse:has(.fg-prob input:checked):not(:has(#fp-productivity:checked)) .item-8{display:none}
+.browse:has(.fg-plat input:checked):not(:has(#fl-copilot:checked)) .item-8{display:none}
+.browse:has(.fg-owner input:checked):not(:has(#fo-modern-workplace:checked)) .item-8{display:none}
+.browse:has(.fg-cost input:checked):not(:has(#fc-internal:checked)) .item-8{display:none}
+.browse:has(.fg-type input:checked):not(:has(#ft-tool:checked)) .item-9{display:none}
+.browse:has(.fg-prob input:checked):not(:has(#fp-data:checked)) .item-9{display:none}
+.browse:has(.fg-plat input:checked):not(:has(#fl-fabric:checked)) .item-9{display:none}
+.browse:has(.fg-owner input:checked):not(:has(#fo-data-platforms:checked)) .item-9{display:none}
+.browse:has(.fg-cost input:checked):not(:has(#fc-licensed:checked)) .item-9{display:none}
+.browse:has(.fg-type input:checked):not(:has(#ft-tool:checked)) .item-10{display:none}
+.browse:has(.fg-prob input:checked):not(:has(#fp-delivery:checked)) .item-10{display:none}
+.browse:has(.fg-plat input:checked):not(:has(#fl-github:checked)) .item-10{display:none}
+.browse:has(.fg-owner input:checked):not(:has(#fo-software-engineering:checked)) .item-10{display:none}
+.browse:has(.fg-cost input:checked):not(:has(#fc-free:checked)) .item-10{display:none}
+.browse:has(.fg-type input:checked):not(:has(#ft-prompt:checked)) .item-11{display:none}
+.browse:has(.fg-prob input:checked):not(:has(#fp-sales:checked)) .item-11{display:none}
+.browse:has(.fg-plat input:checked):not(:has(#fl-insightgpt:checked)) .item-11{display:none}
+.browse:has(.fg-owner input:checked):not(:has(#fo-services-delivery:checked)) .item-11{display:none}
+.browse:has(.fg-cost input:checked):not(:has(#fc-internal:checked)) .item-11{display:none}
+.browse:has(.fg-type input:checked):not(:has(#ft-prompt:checked)) .item-12{display:none}
+.browse:has(.fg-prob input:checked):not(:has(#fp-security:checked)) .item-12{display:none}
+.browse:has(.fg-plat input:checked):not(:has(#fl-github:checked)):not(:has(#fl-insightgpt:checked)) .item-12{display:none}
+.browse:has(.fg-owner input:checked):not(:has(#fo-security-practice:checked)) .item-12{display:none}
+.browse:has(.fg-cost input:checked):not(:has(#fc-internal:checked)) .item-12{display:none}
+.browse:has(.fg-type input:checked):not(:has(#ft-playbook:checked)) .item-13{display:none}
+.browse:has(.fg-prob input:checked):not(:has(#fp-security:checked)) .item-13{display:none}
+.browse:has(.fg-plat input:checked):not(:has(#fl-azure:checked)) .item-13{display:none}
+.browse:has(.fg-owner input:checked):not(:has(#fo-cloud-platforms:checked)) .item-13{display:none}
+.browse:has(.fg-cost input:checked):not(:has(#fc-free:checked)) .item-13{display:none}
+.browse:has(.fg-type input:checked):not(:has(#ft-playbook:checked)) .item-14{display:none}
+.browse:has(.fg-prob input:checked):not(:has(#fp-productivity:checked)) .item-14{display:none}
+.browse:has(.fg-plat input:checked):not(:has(#fl-copilot:checked)) .item-14{display:none}
+.browse:has(.fg-owner input:checked):not(:has(#fo-modern-workplace:checked)) .item-14{display:none}
+.browse:has(.fg-cost input:checked):not(:has(#fc-free:checked)) .item-14{display:none}
+.browse:has(.fg-type input:checked):not(:has(#ft-model:checked)) .item-15{display:none}
+.browse:has(.fg-prob input:checked):not(:has(#fp-support:checked)) .item-15{display:none}
+.browse:has(.fg-plat input:checked):not(:has(#fl-fabric:checked)) .item-15{display:none}
+.browse:has(.fg-owner input:checked):not(:has(#fo-data-science-guild:checked)) .item-15{display:none}
+.browse:has(.fg-cost input:checked):not(:has(#fc-internal:checked)) .item-15{display:none}
+.browse:has(#fr-45:checked) .item:not([data-rt~="r45"]){display:none}
+.browse:has(#fr-4:checked) .item:not([data-rt~="r40"]){display:none}
+.browse:has(#sort option[value="rat"]:checked) .item{order:var(--o-rat)}
+.browse:has(#sort option[value="new"]:checked) .item{order:var(--o-new)}
+.browse:has(#sort option[value="name"]:checked) .item{order:var(--o-name)}
+.browse:has(#ft-agent:checked) .achip-ft-agent{display:inline-flex}
+.browse:has(#ft-model:checked) .achip-ft-model{display:inline-flex}
+.browse:has(#ft-tool:checked) .achip-ft-tool{display:inline-flex}
+.browse:has(#ft-prompt:checked) .achip-ft-prompt{display:inline-flex}
+.browse:has(#ft-playbook:checked) .achip-ft-playbook{display:inline-flex}
+.browse:has(#fp-sales:checked) .achip-fp-sales{display:inline-flex}
+.browse:has(#fp-support:checked) .achip-fp-support{display:inline-flex}
+.browse:has(#fp-delivery:checked) .achip-fp-delivery{display:inline-flex}
+.browse:has(#fp-data:checked) .achip-fp-data{display:inline-flex}
+.browse:has(#fp-finops:checked) .achip-fp-finops{display:inline-flex}
+.browse:has(#fp-security:checked) .achip-fp-security{display:inline-flex}
+.browse:has(#fp-productivity:checked) .achip-fp-productivity{display:inline-flex}
+.browse:has(#fl-azure:checked) .achip-fl-azure{display:inline-flex}
+.browse:has(#fl-copilot:checked) .achip-fl-copilot{display:inline-flex}
+.browse:has(#fl-bedrock:checked) .achip-fl-bedrock{display:inline-flex}
+.browse:has(#fl-fabric:checked) .achip-fl-fabric{display:inline-flex}
+.browse:has(#fl-servicenow:checked) .achip-fl-servicenow{display:inline-flex}
+.browse:has(#fl-github:checked) .achip-fl-github{display:inline-flex}
+.browse:has(#fl-insightgpt:checked) .achip-fl-insightgpt{display:inline-flex}
+.browse:has(#fo-ai-coe:checked) .achip-fo-ai-coe{display:inline-flex}
+.browse:has(#fo-cloud-platforms:checked) .achip-fo-cloud-platforms{display:inline-flex}
+.browse:has(#fo-data-platforms:checked) .achip-fo-data-platforms{display:inline-flex}
+.browse:has(#fo-data-science-guild:checked) .achip-fo-data-science-guild{display:inline-flex}
+.browse:has(#fo-legal-ops:checked) .achip-fo-legal-ops{display:inline-flex}
+.browse:has(#fo-managed-services:checked) .achip-fo-managed-services{display:inline-flex}
+.browse:has(#fo-modern-workplace:checked) .achip-fo-modern-workplace{display:inline-flex}
+.browse:has(#fo-sales-enablement:checked) .achip-fo-sales-enablement{display:inline-flex}
+.browse:has(#fo-security-practice:checked) .achip-fo-security-practice{display:inline-flex}
+.browse:has(#fo-services-delivery:checked) .achip-fo-services-delivery{display:inline-flex}
+.browse:has(#fo-software-engineering:checked) .achip-fo-software-engineering{display:inline-flex}
+.browse:has(#fc-free:checked) .achip-fc-free{display:inline-flex}
+.browse:has(#fc-internal:checked) .achip-fc-internal{display:inline-flex}
+.browse:has(#fc-consumption:checked) .achip-fc-consumption{display:inline-flex}
+.browse:has(#fc-licensed:checked) .achip-fc-licensed{display:inline-flex}
+.browse:has(#fr-4:checked) .achip-fr-4{display:inline-flex}
+.browse:has(#fr-45:checked) .achip-fr-45{display:inline-flex}
+
+/* ---------- My items ---------- */
+.saved{display:none}
+.saved-empty{display:none;grid-column:1/-1}
+body:not(:has(input[name="save"]:checked)) .saved-empty{display:flex}
+body:has(#b1:checked) .saved-1{display:flex}
+body:has(#b2:checked) .saved-2{display:flex}
+body:has(#b3:checked) .saved-3{display:flex}
+body:has(#b4:checked) .saved-4{display:flex}
+body:has(#b5:checked) .saved-5{display:flex}
+body:has(#b6:checked) .saved-6{display:flex}
+body:has(#b7:checked) .saved-7{display:flex}
+body:has(#b8:checked) .saved-8{display:flex}
+body:has(#b9:checked) .saved-9{display:flex}
+body:has(#b10:checked) .saved-10{display:flex}
+body:has(#b11:checked) .saved-11{display:flex}
+body:has(#b12:checked) .saved-12{display:flex}
+body:has(#b13:checked) .saved-13{display:flex}
+body:has(#b14:checked) .saved-14{display:flex}
+body:has(#b15:checked) .saved-15{display:flex}
+
+/* ---------- Responsive ---------- */
+@media (max-width:1023px){
+  .emphasis,.aside{position:static}
+  .grid-lg,.newest,.grid-sm,.submit,.results__grid,.browse{grid-template-columns:minmax(0,1fr)}
+  .browse{gap:24px}
+}
+@media (max-width:599px){
+  .card,.panel,.emphasis,.empty{padding:20px}
+  .form__row{flex-direction:column;width:100%}
+  .results{grid-template-columns:minmax(0,1fr)}
+  .search{grid-row:1;max-width:none}
+  .sortsel{grid-column:1;grid-row:auto;margin-bottom:20px}
+  .sortsel .select-wrap{flex:1;width:auto}
+  .rescount{grid-row:auto}.achips{grid-row:auto}.results__grid{grid-row:auto}.noresults{grid-row:auto}
+}
+</style>
+</head>
+<body>
+<input class="route" type="radio" name="page" id="pg-home" aria-label="Home" checked>
+<input class="route" type="radio" name="page" id="pg-browse" aria-label="Browse">
+<input class="route" type="radio" name="page" id="pg-submit" aria-label="Submit a tool">
+<input class="route" type="radio" name="page" id="pg-mine" aria-label="My items">
+<input class="route" type="radio" name="page" id="pg-thanks" aria-label="Thank you">
+<input class="route" type="checkbox" id="nav-open" aria-label="Open navigation">
+
+<!-- Icon sprite. EDIT: approximations of the Figma icons. Paste exact Figma paths inside the matching <symbol>, keep currentColor. -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <symbol id="i-ring" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6.75" fill="none" stroke="currentColor" stroke-width="2.5"/></symbol>
+    <symbol id="i-heart" viewBox="0 0 24 24"><path d="M12 20.5s-7.5-4.6-9.3-9.2C1.4 8 3.3 4.8 6.6 4.8c2 0 3.5 1 5.4 3 1.9-2 3.4-3 5.4-3 3.3 0 5.2 3.2 3.9 6.5-1.8 4.6-9.3 9.2-9.3 9.2z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></symbol>
+    <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 3l2.7 5.8 6.3.7-4.7 4.3 1.3 6.2L12 17l-5.6 3 1.3-6.2L3 9.5l6.3-.7z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></symbol>
+    <symbol id="i-close" viewBox="0 0 20 20"><path d="M5 5l10 10M15 5L5 15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+    <symbol id="i-chevron" viewBox="0 0 20 20"><path d="M5 7.5l5 5 5-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-back" viewBox="0 0 16 16"><path d="M10 3L5 8l5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></g></symbol>
+    <symbol id="i-menu" viewBox="0 0 20 20"><path d="M3 5h14M3 10h14M3 15h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+    <symbol id="i-agents" viewBox="0 0 48 40"><g fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 12L6 20l9 8M33 12l9 8-9 8M27 8l-6 24"/></g></symbol>
+    <symbol id="i-models" viewBox="0 0 48 40"><g fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="6" width="36" height="28" rx="5"/><circle cx="17" cy="20" r="4"/><path d="M26 16h10M26 24h10"/></g></symbol>
+    <symbol id="i-tools" viewBox="0 0 48 40"><g fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="4"/><circle cx="39" cy="32" r="4"/><path d="M13 8h14c7 0 7 12 0 12h-6c-7 0-7 12 0 12h14"/></g></symbol>
+    <symbol id="i-prompts" viewBox="0 0 48 40"><g fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="5" width="38" height="30" rx="4"/><path d="M20 13c-3 0-3 2.5-3 4.5s-1.5 2.5-3 2.5c1.5 0 3 .5 3 2.5s0 4.5 3 4.5M28 13c3 0 3 2.5 3 4.5s1.5 2.5 3 2.5c-1.5 0-3 .5-3 2.5s0 4.5-3 4.5"/></g></symbol>
+    <symbol id="i-playbooks" viewBox="0 0 48 40"><g fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M24 9c-4-3-10-4-17-3v26c7-1 13 0 17 3 4-3 10-4 17-3V6c-7-1-13 0-17 3zM24 9v26"/></g></symbol>
+    <!-- Tool logo, the supplied artwork rebuilt as vector. Unmodified (rule logo-unmodified). -->
+    <symbol id="i-logo" viewBox="0 0 1547 1546">
+      <rect x="346" y="44" width="208" height="818" fill="#ae0a46"/><rect x="684" y="346" width="819" height="208" fill="#d30e8b"/>
+      <rect x="995" y="684" width="207" height="818" fill="#711357"/><rect x="44" y="994" width="818" height="207" fill="#ae0e2d"/>
+      <circle cx="1097.5" cy="125.5" r="125.5" fill="#721357"/><circle cx="125.5" cy="449.5" r="125.5" fill="#d40d8c"/>
+      <circle cx="1421.5" cy="1096.5" r="125.5" fill="#ae0e2e"/><circle cx="449.5" cy="1420.5" r="125.5" fill="#ae0a46"/>
+    </symbol>
+  </defs>
+</svg>
+
+<!-- ===== Navbar: two tier header (rule navbar-two-tier). Delete it if SharePoint already shows one. ===== -->
+<header class="navbar" id="navbar">
+  <div class="brand-row">
+    <div class="brand"><span class="brand__name">Agent Marketplace (AI COE)</span></div>
+    <div class="utility">
+      <label class="nav-toggle" for="nav-open"><span class="sr">Open navigation</span><svg aria-hidden="true"><use href="#i-menu"/></svg></label>
+      <!-- EDIT: account. SharePoint supplies the signed in person; replace the initials, name and links. -->
+      <details class="account">
+        <summary class="account__btn" aria-label="Account menu for Renee Kim"><span class="avatar" aria-hidden="true">RK</span><span class="account__name">Renee Kim</span><svg class="chev" aria-hidden="true"><use href="#i-chevron"/></svg></summary>
+        <div class="menu" role="menu">
+          <p class="menu__meta">Design engineer</p>
+          <a href="#" role="menuitem">Profile</a>
+          <a href="#" role="menuitem">Language: English</a>
+          <hr>
+          <a href="#" role="menuitem">Sign out</a>
+        </div>
+      </details>
+    </div>
+  </div>
+  <nav class="dest-row" aria-label="Site">
+    <label class="nav-item" for="pg-home">Home</label>
+    <label class="nav-item" for="pg-browse">Browse</label>
+    <label class="nav-item" for="pg-submit">Submit a tool</label>
+    <label class="nav-item" for="pg-mine">My items</label>
+  </nav>
+</header>
+
+<main>
+
+<!-- ================================ HOME =============================== -->
+<section id="home" class="view" aria-labelledby="home-title">
+  <div class="band band--hero"><div class="wrap">
+    <p class="overline">AI delivery solution · internal use</p>
+    <h1 id="home-title">Find the tool. Solve the problem</h1>
+    <p class="lede">Approved agents, models, connectors, prompts and playbooks from teams across Insight.</p>
+  </div></div>
+
+  <div class="wrap stack">
+    <section class="section" aria-labelledby="h-deployed">
+      <div class="section__head">
+        <h2 class="section__title" id="h-deployed"><svg aria-hidden="true"><use href="#i-ring"/></svg>Our most deployed tools</h2>
+        <label class="see-all" for="pg-browse" data-sort="pop">See all</label>
+      </div>
+      <div class="grid-lg">
+<article class="card card--lg "><div class="card__top"><span class="overline">Model</span><span class="heart"><input class="heart__input" type="checkbox" id="hd6" aria-label="Save GPT-4.1 (approved endpoint)"><svg aria-hidden="true"><use href="#i-heart"/></svg></span></div><div class="card__body"><svg class="card__logo" aria-hidden="true"><use href="#i-logo"/></svg><div class="card__text"><h3 class="card__title">GPT-4.1 (approved endpoint)</h3><p class="meta">AI COE</p><p>Security-reviewed general model endpoint with logging, quotas and no training on inputs.</p></div></div><ul class="tags" aria-label="Tags"><li class="tag">Productivity</li><li class="tag">Azure OpenAI</li><li class="tag">Consumption</li></ul><hr class="divider"><div class="card__foot"><div class="stats"><span class="stat"><svg aria-hidden="true"><use href="#i-star"/></svg><span class="sr">Rating </span>4.9</span><span class="stat">18.9 k deploys</span><span class="stat"><svg aria-hidden="true"><use href="#i-heart"/></svg>1204<span class="sr"> saves</span></span></div><!-- EDIT: Deploy link --><a class="btn btn-outline" href="#">Deploy<span class="sr"> GPT-4.1 (approved endpoint)</span></a></div></article>
+<article class="card card--lg "><div class="card__top"><span class="overline">Agent</span><span class="heart"><input class="heart__input" type="checkbox" id="hd1" aria-label="Save InsightGPT"><svg aria-hidden="true"><use href="#i-heart"/></svg></span></div><div class="card__body"><svg class="card__logo" aria-hidden="true"><use href="#i-logo"/></svg><div class="card__text"><h3 class="card__title">InsightGPT</h3><p class="meta">AI COE</p><p>Secure enterprise assistant for drafting, summarizing and Q&amp;A over approved Insight content.</p></div></div><ul class="tags" aria-label="Tags"><li class="tag">Productivity</li><li class="tag">Azure OpenAI</li><li class="tag">Internal</li></ul><hr class="divider"><div class="card__foot"><div class="stats"><span class="stat"><svg aria-hidden="true"><use href="#i-star"/></svg><span class="sr">Rating </span>4.8</span><span class="stat">12.4 k deploys</span><span class="stat"><svg aria-hidden="true"><use href="#i-heart"/></svg>842<span class="sr"> saves</span></span></div><!-- EDIT: Deploy link --><a class="btn btn-outline" href="#">Deploy<span class="sr"> InsightGPT</span></a></div></article>
+<article class="card card--lg "><div class="card__top"><span class="overline">Case study / playbook</span><span class="heart"><input class="heart__input" type="checkbox" id="hd14" aria-label="Save Copilot Adoption Playbook"><svg aria-hidden="true"><use href="#i-heart"/></svg></span></div><div class="card__body"><svg class="card__logo" aria-hidden="true"><use href="#i-logo"/></svg><div class="card__text"><h3 class="card__title">Copilot Adoption Playbook</h3><p class="meta">Modern Workplace</p><p>Champions program, persona use cases and measurement plan from a 6,000-seat rollout.</p></div></div><ul class="tags" aria-label="Tags"><li class="tag">Productivity</li><li class="tag">Copilot Studio</li><li class="tag">Free</li></ul><hr class="divider"><div class="card__foot"><div class="stats"><span class="stat"><svg aria-hidden="true"><use href="#i-star"/></svg><span class="sr">Rating </span>4.6</span><span class="stat">7.8 k deploys</span><span class="stat"><svg aria-hidden="true"><use href="#i-heart"/></svg>615<span class="sr"> saves</span></span></div><!-- EDIT: Deploy link --><a class="btn btn-outline" href="#">Deploy<span class="sr"> Copilot Adoption Playbook</span></a></div></article>
+      </div>
+    </section>
+
+    <section class="section" aria-labelledby="h-newest">
+      <div class="section__head">
+        <h2 class="section__title" id="h-newest"><svg aria-hidden="true"><use href="#i-ring"/></svg>Our newest agents</h2>
+        <label class="see-all" for="pg-browse" data-sort="new">See all</label>
+      </div>
+      <div class="newest">
+        <div class="newest__list">
+<article class="card card--md "><div class="card__top"><span class="overline">Agent</span><span class="heart"><input class="heart__input" type="checkbox" id="hn2" aria-label="Save RFP Response Drafter"><svg aria-hidden="true"><use href="#i-heart"/></svg></span></div><div class="card__body"><svg class="card__logo" aria-hidden="true"><use href="#i-logo"/></svg><div class="card__text"><h3 class="card__title">RFP Response Drafter</h3><p class="meta">Sales Enablement</p><p>Drafts first-pass RFP answers from past wins and the approved capability library.</p></div></div><ul class="tags" aria-label="Tags"><li class="tag">Sales &amp; proposals</li><li class="tag">Copilot Studio</li><li class="tag">Internal</li></ul><hr class="divider"><div class="card__foot"><div class="stats"><span class="stat"><svg aria-hidden="true"><use href="#i-star"/></svg><span class="sr">Rating </span>4.6</span><span class="stat">3.1 k deploys</span><span class="stat"><svg aria-hidden="true"><use href="#i-heart"/></svg>310<span class="sr"> saves</span></span></div><!-- EDIT: Deploy link --><a class="btn btn-outline" href="#">Deploy<span class="sr"> RFP Response Drafter</span></a></div></article>
+<article class="card card--md "><div class="card__top"><span class="overline">Agent</span><span class="heart"><input class="heart__input" type="checkbox" id="hn3" aria-label="Save Contract Clause Reviewer"><svg aria-hidden="true"><use href="#i-heart"/></svg></span></div><div class="card__body"><svg class="card__logo" aria-hidden="true"><use href="#i-logo"/></svg><div class="card__text"><h3 class="card__title">Contract Clause Reviewer</h3><p class="meta">Legal Ops</p><p>Flags non-standard clauses in client MSAs and SOWs against Insight playbook positions.</p></div></div><ul class="tags" aria-label="Tags"><li class="tag">Finance &amp; operations</li><li class="tag">Azure OpenAI</li><li class="tag">Internal</li></ul><hr class="divider"><div class="card__foot"><div class="stats"><span class="stat"><svg aria-hidden="true"><use href="#i-star"/></svg><span class="sr">Rating </span>4.4</span><span class="stat">980 deploys</span><span class="stat"><svg aria-hidden="true"><use href="#i-heart"/></svg>120<span class="sr"> saves</span></span></div><!-- EDIT: Deploy link --><a class="btn btn-outline" href="#">Deploy<span class="sr"> Contract Clause Reviewer</span></a></div></article>
+<article class="card card--md "><div class="card__top"><span class="overline">Agent</span><span class="heart"><input class="heart__input" type="checkbox" id="hn1" aria-label="Save InsightGPT"><svg aria-hidden="true"><use href="#i-heart"/></svg></span></div><div class="card__body"><svg class="card__logo" aria-hidden="true"><use href="#i-logo"/></svg><div class="card__text"><h3 class="card__title">InsightGPT</h3><p class="meta">AI COE</p><p>Secure enterprise assistant for drafting, summarizing and Q&amp;A over approved Insight content.</p></div></div><ul class="tags" aria-label="Tags"><li class="tag">Productivity</li><li class="tag">Azure OpenAI</li><li class="tag">Internal</li></ul><hr class="divider"><div class="card__foot"><div class="stats"><span class="stat"><svg aria-hidden="true"><use href="#i-star"/></svg><span class="sr">Rating </span>4.8</span><span class="stat">12.4 k deploys</span><span class="stat"><svg aria-hidden="true"><use href="#i-heart"/></svg>842<span class="sr"> saves</span></span></div><!-- EDIT: Deploy link --><a class="btn btn-outline" href="#">Deploy<span class="sr"> InsightGPT</span></a></div></article>
+        </div>
+        <aside class="emphasis" aria-labelledby="cta-title">
+          <div class="emphasis__text">
+            <h3 id="cta-title">Share your solution with the team</h3>
+            <p>Submit your agent, model, connector, prompt pack or playbook. Approved tools are listed here in the new listings queue.</p>
+          </div>
+          <label class="btn btn-outline" for="pg-submit">Submit a tool</label>
+        </aside>
+      </div>
+    </section>
+
+    <section class="section" aria-labelledby="h-type">
+      <div class="section__head"><h2 class="section__title" id="h-type"><svg aria-hidden="true"><use href="#i-ring"/></svg>Browse by type</h2></div>
+      <div class="grid-sm">
+<article class="card card--link tile"><div class="tile__head"><svg width="47" height="40" aria-hidden="true"><use href="#i-agents"/></svg><div class="tile__titles"><h3 class="card__title"><label class="stretch" for="pg-browse">Agents</label></h3><p class="meta">4 listed</p></div></div><p>Autonomous software systems that use specialized tools to achieve complex, multi-step goals independently on behalf of a user.</p></article><article class="card card--link tile"><div class="tile__head"><svg width="45" height="40" aria-hidden="true"><use href="#i-models"/></svg><div class="tile__titles"><h3 class="card__title"><label class="stretch" for="pg-browse">Models</label></h3><p class="meta">4 listed</p></div></div><p>Core intelligence engines trained on massive datasets to recognize intricate patterns and generate predictions without explicit human instructions.</p></article><article class="card card--link tile"><div class="tile__head"><svg width="40" height="40" aria-hidden="true"><use href="#i-tools"/></svg><div class="tile__titles"><h3 class="card__title"><label class="stretch" for="pg-browse">Tools and connectors</label></h3><p class="meta">3 listed</p></div></div><p>Integration components that bridge artificial intelligence models with external databases, APIs, and software applications to automate real-time tasks.</p></article><article class="card card--link tile"><div class="tile__head"><svg width="44" height="40" aria-hidden="true"><use href="#i-prompts"/></svg><div class="tile__titles"><h3 class="card__title"><label class="stretch" for="pg-browse">Prompts and skills</label></h3><p class="meta">2 listed</p></div></div><p>Reusable instruction sets and persistent capabilities that define how an AI handles specific, repeatable tasks across multiple user interactions.</p></article><article class="card card--link tile"><div class="tile__head"><svg width="45" height="40" aria-hidden="true"><use href="#i-playbooks"/></svg><div class="tile__titles"><h3 class="card__title"><label class="stretch" for="pg-browse">Playbooks</label></h3><p class="meta">2 listed</p></div></div><p>Strategic documentation outlining real-world applications and step-by-step frameworks to help organizations implement, scale, and govern AI.</p></article>
+      </div>
+    </section>
+  </div>
+</section>
+
+<!-- ============================== BROWSE ============================== -->
+<section id="browse" class="view" aria-labelledby="browse-title">
+  <div class="band"><div class="wrap">
+    <h1 id="browse-title">Browse the catalog</h1>
+    <p class="lede">Find approved agents, models, connectors, prompts and playbooks, then narrow them down with the filters.</p>
+  </div></div>
+  <div class="wrap browse">
+    <form class="filters" action="#browse" method="get">
+      <div class="filters__head"><h2>Filters</h2><button class="btn btn-tertiary" type="reset">Clear all</button></div>
+<div class="fgroup fg-prob" role="group" aria-labelledby="fg-prob-t"><h3 class="fgroup__title" id="fg-prob-t">Business problem</h3><label class="fopt"><input type="checkbox" id="fp-sales"><span>Sales &amp; proposals</span><span class="opt-count">2</span></label><label class="fopt"><input type="checkbox" id="fp-support"><span>Client support</span><span class="opt-count">2</span></label><label class="fopt"><input type="checkbox" id="fp-delivery"><span>Software delivery</span><span class="opt-count">2</span></label><label class="fopt"><input type="checkbox" id="fp-data"><span>Data &amp; analytics</span><span class="opt-count">2</span></label><label class="fopt"><input type="checkbox" id="fp-finops"><span>Finance &amp; operations</span><span class="opt-count">1</span></label><label class="fopt"><input type="checkbox" id="fp-security"><span>Security &amp; compliance</span><span class="opt-count">2</span></label><label class="fopt"><input type="checkbox" id="fp-productivity"><span>Productivity</span><span class="opt-count">4</span></label></div>
+<div class="fgroup fg-type" role="group" aria-labelledby="fg-type-t"><h3 class="fgroup__title" id="fg-type-t">Type</h3><label class="fopt"><input type="checkbox" id="ft-agent"><span>Agent</span><span class="opt-count">4</span></label><label class="fopt"><input type="checkbox" id="ft-model"><span>Model</span><span class="opt-count">4</span></label><label class="fopt"><input type="checkbox" id="ft-tool"><span>Tool / connector</span><span class="opt-count">3</span></label><label class="fopt"><input type="checkbox" id="ft-prompt"><span>Prompt / skill</span><span class="opt-count">2</span></label><label class="fopt"><input type="checkbox" id="ft-playbook"><span>Case study / playbook</span><span class="opt-count">2</span></label></div>
+<div class="fgroup fg-plat" role="group" aria-labelledby="fg-plat-t"><h3 class="fgroup__title" id="fg-plat-t">Platform</h3><label class="fopt"><input type="checkbox" id="fl-azure"><span>Azure OpenAI</span><span class="opt-count">6</span></label><label class="fopt"><input type="checkbox" id="fl-copilot"><span>Copilot Studio</span><span class="opt-count">3</span></label><label class="fopt"><input type="checkbox" id="fl-bedrock"><span>AWS Bedrock</span><span class="opt-count">1</span></label><label class="fopt"><input type="checkbox" id="fl-fabric"><span>Microsoft Fabric</span><span class="opt-count">2</span></label><label class="fopt"><input type="checkbox" id="fl-servicenow"><span>ServiceNow</span><span class="opt-count">1</span></label><label class="fopt"><input type="checkbox" id="fl-github"><span>GitHub</span><span class="opt-count">2</span></label><label class="fopt"><input type="checkbox" id="fl-insightgpt"><span>InsightGPT</span><span class="opt-count">2</span></label></div>
+      <details class="fmore">
+        <summary><span class="fmore__open">See more filters</span><span class="fmore__close">See fewer filters</span><svg aria-hidden="true"><use href="#i-chevron"/></svg></summary>
+        <div class="fgroup" role="radiogroup" aria-labelledby="fg-rate-t"><h3 class="fgroup__title" id="fg-rate-t">Rating</h3>
+          <label class="fopt"><input type="radio" name="frate" id="fr-all" checked><span>Any rating</span></label>
+          <label class="fopt"><input type="radio" name="frate" id="fr-4"><span>4 stars and up</span></label>
+          <label class="fopt"><input type="radio" name="frate" id="fr-45"><span>4.5 stars and up</span></label>
+        </div>
+<div class="fgroup fg-cost" role="group" aria-labelledby="fg-cost-t"><h3 class="fgroup__title" id="fg-cost-t">Cost model</h3><label class="fopt"><input type="checkbox" id="fc-free"><span>Free</span><span class="opt-count">3</span></label><label class="fopt"><input type="checkbox" id="fc-internal"><span>Internal</span><span class="opt-count">7</span></label><label class="fopt"><input type="checkbox" id="fc-consumption"><span>Consumption</span><span class="opt-count">4</span></label><label class="fopt"><input type="checkbox" id="fc-licensed"><span>Licensed</span><span class="opt-count">1</span></label></div>
+<div class="fgroup fg-owner" role="group" aria-labelledby="fg-owner-t"><h3 class="fgroup__title" id="fg-owner-t">Owner</h3><label class="fopt"><input type="checkbox" id="fo-ai-coe"><span>AI COE</span><span class="opt-count">2</span></label><label class="fopt"><input type="checkbox" id="fo-cloud-platforms"><span>Cloud Platforms</span><span class="opt-count">2</span></label><label class="fopt"><input type="checkbox" id="fo-data-platforms"><span>Data Platforms</span><span class="opt-count">1</span></label><label class="fopt"><input type="checkbox" id="fo-data-science-guild"><span>Data Science Guild</span><span class="opt-count">2</span></label><label class="fopt"><input type="checkbox" id="fo-legal-ops"><span>Legal Ops</span><span class="opt-count">1</span></label><label class="fopt"><input type="checkbox" id="fo-managed-services"><span>Managed Services</span><span class="opt-count">1</span></label><label class="fopt"><input type="checkbox" id="fo-modern-workplace"><span>Modern Workplace</span><span class="opt-count">2</span></label><label class="fopt"><input type="checkbox" id="fo-sales-enablement"><span>Sales Enablement</span><span class="opt-count">1</span></label><label class="fopt"><input type="checkbox" id="fo-security-practice"><span>Security Practice</span><span class="opt-count">1</span></label><label class="fopt"><input type="checkbox" id="fo-services-delivery"><span>Services Delivery</span><span class="opt-count">1</span></label><label class="fopt"><input type="checkbox" id="fo-software-engineering"><span>Software Engineering</span><span class="opt-count">1</span></label></div>
+      </details>
+    </form>
+    <div class="results">
+      <!-- Live search needs the script at the bottom. If SharePoint blocks it, the box stays hidden. -->
+      <div class="search" role="search">
+        <label class="sr" for="q">Search the catalog</label>
+        <svg aria-hidden="true"><use href="#i-search"/></svg>
+        <input class="input" id="q" type="search" placeholder="Search by problem, tool, model or team">
+      </div>
+      <label class="sortsel">Sort by
+        <span class="select-wrap"><select class="select" id="sort" name="sort">
+          <option value="pop">Most deployed</option><option value="rat">Highest rated</option><option value="new">Recently updated</option><option value="name">Name A-Z</option>
+        </select><svg aria-hidden="true"><use href="#i-chevron"/></svg></span>
+      </label>
+      <div class="achips"><label class="achip achip-ft-agent" for="ft-agent"><span class="sr">Remove filter: </span>Agent<svg class="achip__x" aria-hidden="true"><use href="#i-close"/></svg></label><label class="achip achip-ft-model" for="ft-model"><span class="sr">Remove filter: </span>Model<svg class="achip__x" aria-hidden="true"><use href="#i-close"/></svg></label><label class="achip achip-ft-tool" for="ft-tool"><span class="sr">Remove filter: </span>Tool / connector<svg class="achip__x" aria-hidden="true"><use href="#i-close"/></svg></label><label class="achip achip-ft-prompt" for="ft-prompt"><span class="sr">Remove filter: </span>Prompt / skill<svg class="achip__x" aria-hidden="true"><use href="#i-close"/></svg></label><label class="achip achip-ft-playbook" for="ft-playbook"><span class="sr">Remove filter: </span>Case study / playbook<svg class="achip__x" aria-hidden="true"><use href="#i-close"/></svg></label><label class="achip achip-fp-sales" for="fp-sales"><span class="sr">Remove filter: </span>Sales &amp; proposals<svg class="achip__x" aria-hidden="true"><use href="#i-close"/></svg></label><label class="achip achip-fp-support" for="fp-support"><span class="sr">Remove filter: </span>Client support<svg class="achip__x" aria-hidden="true"><use href="#i-close"/></svg></label><label class="achip achip-fp-delivery" for="fp-delivery"><span class="sr">Remove filter: </span>Software delivery<svg class="achip__x" aria-hidden="true"><use href="#i-close"/></svg></label><label class="achip achip-fp-data" for="fp-data"><span class="sr">Remove filter: </span>Data &amp; analytics<svg class="achip__x" aria-hidden="true"><use href="#i-close"/></svg></label><label class="achip achip-fp-finops" for="fp-finops"><span class="sr">Remove filter: </span>Finance &amp; operations<svg class="achip__x" aria-hidden="true"><use href="#i-close"/></svg></label><label class="achip achip-fp-security" for="fp-security"><span class="sr">Remove filter: </span>Security &amp; compliance<svg class="achip__x" aria-hidden="true"><use href="#i-close"/></svg></label><label class="achip achip-fp-productivity" for="fp-productivity"><span class="sr">Remove filter: </span>Productivity<svg class="achip__x" aria-hidden="true"><use href="#i-close"/></svg></label><label class="achip achip-fl-azure" for="fl-azure"><span class="sr">Remove filter: </span>Azure OpenAI<svg class="achip__x" aria-hidden="true"><use href="#i-close"/></svg></label><label class="achip achip-fl-copilot" for="fl-copilot"><span class="sr">Remove filter: </span>Copilot Studio<svg class="achip__x" aria-hidden="true"><use href="#i-close"/></svg></label><label class="achip achip-fl-bedrock" for="fl-bedrock"><span class="sr">Remove filter: </span>AWS Bedrock<svg class="achip__x" aria-hidden="true"><use href="#i-close"/></svg></label><label class="achip achip-fl-fabric" for="fl-fabric"><span class="sr">Remove filter: </span>Microsoft Fabric<svg class="achip__x" aria-hidden="true"><use href="#i-close"/></svg></label><label class="achip achip-fl-servicenow" for="fl-servicenow"><span class="sr">Remove filter: </span>ServiceNow<svg class="achip__x" aria-hidden="true"><use href="#i-close"/></svg></label><label class="achip achip-fl-github" for="fl-github"><span class="sr">Remove filter: </span>GitHub<svg class="achip__x" aria-hidden="true"><use href="#i-close"/></svg></label><label class="achip achip-fl-insightgpt" for="fl-insightgpt"><span class="sr">Remove filter: </span>InsightGPT<svg class="achip__x" aria-hidden="true"><use href="#i-close"/></svg></label><label class="achip achip-fo-ai-coe" for="fo-ai-coe"><span class="sr">Remove filter: </span>AI COE<svg class="achip__x" aria-hidden="true"><use href="#i-close"/></svg></label><label class="achip achip-fo-cloud-platforms" for="fo-cloud-platforms"><span class="sr">Remove filter: </span>Cloud Platforms<svg class="achip__x" aria-hidden="true"><use href="#i-close"/></svg></label><label class="achip achip-fo-data-platforms" for="fo-data-platforms"><span class="sr">Remove filter: </span>Data Platforms<svg class="achip__x" aria-hidden="true"><use href="#i-close"/></svg></label><label class="achip achip-fo-data-science-guild" for="fo-data-science-guild"><span class="sr">Remove filter: </span>Data Science Guild<svg class="achip__x" aria-hidden="true"><use href="#i-close"/></svg></label><label class="achip achip-fo-legal-ops" for="fo-legal-ops"><span class="sr">Remove filter: </span>Legal Ops<svg class="achip__x" aria-hidden="true"><use href="#i-close"/></svg></label><label class="achip achip-fo-managed-services" for="fo-managed-services"><span class="sr">Remove filter: </span>Managed Services<svg class="achip__x" aria-hidden="true"><use href="#i-close"/></svg></label><label class="achip achip-fo-modern-workplace" for="fo-modern-workplace"><span class="sr">Remove filter: </span>Modern Workplace<svg class="achip__x" aria-hidden="true"><use href="#i-close"/></svg></label><label class="achip achip-fo-sales-enablement" for="fo-sales-enablement"><span class="sr">Remove filter: </span>Sales Enablement<svg class="achip__x" aria-hidden="true"><use href="#i-close"/></svg></label><label class="achip achip-fo-security-practice" for="fo-security-practice"><span class="sr">Remove filter: </span>Security Practice<svg class="achip__x" aria-hidden="true"><use href="#i-close"/></svg></label><label class="achip achip-fo-services-delivery" for="fo-services-delivery"><span class="sr">Remove filter: </span>Services Delivery<svg class="achip__x" aria-hidden="true"><use href="#i-close"/></svg></label><label class="achip achip-fo-software-engineering" for="fo-software-engineering"><span class="sr">Remove filter: </span>Software Engineering<svg class="achip__x" aria-hidden="true"><use href="#i-close"/></svg></label><label class="achip achip-fc-free" for="fc-free"><span class="sr">Remove filter: </span>Free<svg class="achip__x" aria-hidden="true"><use href="#i-close"/></svg></label><label class="achip achip-fc-internal" for="fc-internal"><span class="sr">Remove filter: </span>Internal<svg class="achip__x" aria-hidden="true"><use href="#i-close"/></svg></label><label class="achip achip-fc-consumption" for="fc-consumption"><span class="sr">Remove filter: </span>Consumption<svg class="achip__x" aria-hidden="true"><use href="#i-close"/></svg></label><label class="achip achip-fc-licensed" for="fc-licensed"><span class="sr">Remove filter: </span>Licensed<svg class="achip__x" aria-hidden="true"><use href="#i-close"/></svg></label><label class="achip achip-fr-4" for="fr-all"><span class="sr">Remove filter: </span>4 stars and up<svg class="achip__x" aria-hidden="true"><use href="#i-close"/></svg></label><label class="achip achip-fr-45" for="fr-all"><span class="sr">Remove filter: </span>4.5 stars and up<svg class="achip__x" aria-hidden="true"><use href="#i-close"/></svg></label></div>
+      <div class="results__grid">
+<article class="card card--md item item-1" data-rt="r40 r45" style="--o-pop:2;--o-rat:2;--o-new:4;--o-name:10"><div class="card__top"><span class="overline">Agent</span><span class="heart"><input class="heart__input" type="checkbox" name="save" id="b1" checked aria-label="Save InsightGPT"><svg aria-hidden="true"><use href="#i-heart"/></svg></span></div><div class="card__body"><svg class="card__logo" aria-hidden="true"><use href="#i-logo"/></svg><div class="card__text"><h3 class="card__title">InsightGPT</h3><p class="meta">AI COE · Updated Sep 12, 2026</p><p>Secure enterprise assistant for drafting, summarizing and Q&amp;A over approved Insight content.</p></div></div><ul class="tags" aria-label="Tags"><li class="tag">Productivity</li><li class="tag">Azure OpenAI</li><li class="tag">Internal</li></ul><hr class="divider"><div class="card__foot"><div class="stats"><span class="stat"><svg aria-hidden="true"><use href="#i-star"/></svg><span class="sr">Rating </span>4.8</span><span class="stat">12.4 k deploys</span><span class="stat"><svg aria-hidden="true"><use href="#i-heart"/></svg>842<span class="sr"> saves</span></span></div><!-- EDIT: Deploy link --><a class="btn btn-outline" href="#">Deploy<span class="sr"> InsightGPT</span></a></div></article>
+<article class="card card--md item item-2" data-rt="r40 r45" style="--o-pop:8;--o-rat:8;--o-new:8;--o-name:11"><div class="card__top"><span class="overline">Agent</span><span class="heart"><input class="heart__input" type="checkbox" name="save" id="b2" aria-label="Save RFP Response Drafter"><svg aria-hidden="true"><use href="#i-heart"/></svg></span></div><div class="card__body"><svg class="card__logo" aria-hidden="true"><use href="#i-logo"/></svg><div class="card__text"><h3 class="card__title">RFP Response Drafter</h3><p class="meta">Sales Enablement · Updated Sep 3, 2026</p><p>Drafts first-pass RFP answers from past wins and the approved capability library.</p></div></div><ul class="tags" aria-label="Tags"><li class="tag">Sales &amp; proposals</li><li class="tag">Copilot Studio</li><li class="tag">Internal</li></ul><hr class="divider"><div class="card__foot"><div class="stats"><span class="stat"><svg aria-hidden="true"><use href="#i-star"/></svg><span class="sr">Rating </span>4.6</span><span class="stat">3.1 k deploys</span><span class="stat"><svg aria-hidden="true"><use href="#i-heart"/></svg>310<span class="sr"> saves</span></span></div><!-- EDIT: Deploy link --><a class="btn btn-outline" href="#">Deploy<span class="sr"> RFP Response Drafter</span></a></div></article>
+<article class="card card--md item item-3" data-rt="r40" style="--o-pop:14;--o-rat:12;--o-new:11;--o-name:4"><div class="card__top"><span class="overline">Agent</span><span class="heart"><input class="heart__input" type="checkbox" name="save" id="b3" aria-label="Save Contract Clause Reviewer"><svg aria-hidden="true"><use href="#i-heart"/></svg></span></div><div class="card__body"><svg class="card__logo" aria-hidden="true"><use href="#i-logo"/></svg><div class="card__text"><h3 class="card__title">Contract Clause Reviewer</h3><p class="meta">Legal Ops · Updated Aug 21, 2026</p><p>Flags non-standard clauses in client MSAs and SOWs against Insight playbook positions.</p></div></div><ul class="tags" aria-label="Tags"><li class="tag">Finance &amp; operations</li><li class="tag">Azure OpenAI</li><li class="tag">Internal</li></ul><hr class="divider"><div class="card__foot"><div class="stats"><span class="stat"><svg aria-hidden="true"><use href="#i-star"/></svg><span class="sr">Rating </span>4.4</span><span class="stat">980 deploys</span><span class="stat"><svg aria-hidden="true"><use href="#i-heart"/></svg>120<span class="sr"> saves</span></span></div><!-- EDIT: Deploy link --><a class="btn btn-outline" href="#">Deploy<span class="sr"> Contract Clause Reviewer</span></a></div></article>
+<article class="card card--md item item-4" data-rt="r40 r45" style="--o-pop:5;--o-rat:10;--o-new:6;--o-name:13"><div class="card__top"><span class="overline">Agent</span><span class="heart"><input class="heart__input" type="checkbox" name="save" id="b4" aria-label="Save ServiceNow Ticket Triage"><svg aria-hidden="true"><use href="#i-heart"/></svg></span></div><div class="card__body"><svg class="card__logo" aria-hidden="true"><use href="#i-logo"/></svg><div class="card__text"><h3 class="card__title">ServiceNow Ticket Triage</h3><p class="meta">Managed Services · Updated Sep 9, 2026</p><p>Classifies, prioritizes and routes incoming tickets; suggests a first response from KB articles.</p></div></div><ul class="tags" aria-label="Tags"><li class="tag">Client support</li><li class="tag">ServiceNow</li><li class="tag">Azure OpenAI</li><li class="tag">Consumption</li></ul><hr class="divider"><div class="card__foot"><div class="stats"><span class="stat"><svg aria-hidden="true"><use href="#i-star"/></svg><span class="sr">Rating </span>4.5</span><span class="stat">5.6 k deploys</span><span class="stat"><svg aria-hidden="true"><use href="#i-heart"/></svg>402<span class="sr"> saves</span></span></div><!-- EDIT: Deploy link --><a class="btn btn-outline" href="#">Deploy<span class="sr"> ServiceNow Ticket Triage</span></a></div></article>
+<article class="card card--md item item-5" data-rt="r40 r45" style="--o-pop:11;--o-rat:5;--o-new:2;--o-name:9"><div class="card__top"><span class="overline">Model</span><span class="heart"><input class="heart__input" type="checkbox" name="save" id="b5" aria-label="Save Insight Embeddings v2"><svg aria-hidden="true"><use href="#i-heart"/></svg></span></div><div class="card__body"><svg class="card__logo" aria-hidden="true"><use href="#i-logo"/></svg><div class="card__text"><h3 class="card__title">Insight Embeddings v2</h3><p class="meta">Data Science Guild · Updated Sep 15, 2026</p><p>Domain-tuned embedding model for Insight documents, SOWs and service catalog text.</p></div></div><ul class="tags" aria-label="Tags"><li class="tag">Data &amp; analytics</li><li class="tag">Azure OpenAI</li><li class="tag">Consumption</li></ul><hr class="divider"><div class="card__foot"><div class="stats"><span class="stat"><svg aria-hidden="true"><use href="#i-star"/></svg><span class="sr">Rating </span>4.7</span><span class="stat">2.2 k deploys</span><span class="stat"><svg aria-hidden="true"><use href="#i-heart"/></svg>198<span class="sr"> saves</span></span></div><!-- EDIT: Deploy link --><a class="btn btn-outline" href="#">Deploy<span class="sr"> Insight Embeddings v2</span></a></div></article>
+<article class="card card--md item item-6" data-rt="r40 r45" style="--o-pop:1;--o-rat:1;--o-new:10;--o-name:8"><div class="card__top"><span class="overline">Model</span><span class="heart"><input class="heart__input" type="checkbox" name="save" id="b6" aria-label="Save GPT-4.1 (approved endpoint)"><svg aria-hidden="true"><use href="#i-heart"/></svg></span></div><div class="card__body"><svg class="card__logo" aria-hidden="true"><use href="#i-logo"/></svg><div class="card__text"><h3 class="card__title">GPT-4.1 (approved endpoint)</h3><p class="meta">AI COE · Updated Aug 30, 2026</p><p>Security-reviewed general model endpoint with logging, quotas and no training on inputs.</p></div></div><ul class="tags" aria-label="Tags"><li class="tag">Productivity</li><li class="tag">Azure OpenAI</li><li class="tag">Consumption</li></ul><hr class="divider"><div class="card__foot"><div class="stats"><span class="stat"><svg aria-hidden="true"><use href="#i-star"/></svg><span class="sr">Rating </span>4.9</span><span class="stat">18.9 k deploys</span><span class="stat"><svg aria-hidden="true"><use href="#i-heart"/></svg>1204<span class="sr"> saves</span></span></div><!-- EDIT: Deploy link --><a class="btn btn-outline" href="#">Deploy<span class="sr"> GPT-4.1 (approved endpoint)</span></a></div></article>
+<article class="card card--md item item-7" data-rt="r40 r45" style="--o-pop:6;--o-rat:3;--o-new:3;--o-name:2"><div class="card__top"><span class="overline">Model</span><span class="heart"><input class="heart__input" type="checkbox" name="save" id="b7" aria-label="Save Claude Sonnet via Bedrock"><svg aria-hidden="true"><use href="#i-heart"/></svg></span></div><div class="card__body"><svg class="card__logo" aria-hidden="true"><use href="#i-logo"/></svg><div class="card__text"><h3 class="card__title">Claude Sonnet via Bedrock</h3><p class="meta">Cloud Platforms · Updated Sep 14, 2026</p><p>Approved Bedrock endpoint for coding and long-document tasks in AWS-hosted client work.</p></div></div><ul class="tags" aria-label="Tags"><li class="tag">Software delivery</li><li class="tag">AWS Bedrock</li><li class="tag">Consumption</li></ul><hr class="divider"><div class="card__foot"><div class="stats"><span class="stat"><svg aria-hidden="true"><use href="#i-star"/></svg><span class="sr">Rating </span>4.8</span><span class="stat">4.3 k deploys</span><span class="stat"><svg aria-hidden="true"><use href="#i-heart"/></svg>377<span class="sr"> saves</span></span></div><!-- EDIT: Deploy link --><a class="btn btn-outline" href="#">Deploy<span class="sr"> Claude Sonnet via Bedrock</span></a></div></article>
+<article class="card card--md item item-8" data-rt="r40" style="--o-pop:9;--o-rat:13;--o-new:13;--o-name:14"><div class="card__top"><span class="overline">Tool / connector</span><span class="heart"><input class="heart__input" type="checkbox" name="save" id="b8" aria-label="Save SharePoint Knowledge Connector"><svg aria-hidden="true"><use href="#i-heart"/></svg></span></div><div class="card__body"><svg class="card__logo" aria-hidden="true"><use href="#i-logo"/></svg><div class="card__text"><h3 class="card__title">SharePoint Knowledge Connector</h3><p class="meta">Modern Workplace · Updated Aug 12, 2026</p><p>Grounds any Copilot Studio agent on a SharePoint site with permission trimming preserved.</p></div></div><ul class="tags" aria-label="Tags"><li class="tag">Productivity</li><li class="tag">Copilot Studio</li><li class="tag">Internal</li></ul><hr class="divider"><div class="card__foot"><div class="stats"><span class="stat"><svg aria-hidden="true"><use href="#i-star"/></svg><span class="sr">Rating </span>4.3</span><span class="stat">2.8 k deploys</span><span class="stat"><svg aria-hidden="true"><use href="#i-heart"/></svg>214<span class="sr"> saves</span></span></div><!-- EDIT: Deploy link --><a class="btn btn-outline" href="#">Deploy<span class="sr"> SharePoint Knowledge Connector</span></a></div></article>
+<article class="card card--md item item-9" data-rt="r40" style="--o-pop:13;--o-rat:14;--o-new:15;--o-name:6"><div class="card__top"><span class="overline">Tool / connector</span><span class="heart"><input class="heart__input" type="checkbox" name="save" id="b9" aria-label="Save Fabric Lakehouse Connector"><svg aria-hidden="true"><use href="#i-heart"/></svg></span></div><div class="card__body"><svg class="card__logo" aria-hidden="true"><use href="#i-logo"/></svg><div class="card__text"><h3 class="card__title">Fabric Lakehouse Connector</h3><p class="meta">Data Platforms · Updated Jul 28, 2026</p><p>Query governed Fabric lakehouse tables from agents with row-level security intact.</p></div></div><ul class="tags" aria-label="Tags"><li class="tag">Data &amp; analytics</li><li class="tag">Microsoft Fabric</li><li class="tag">Licensed</li></ul><hr class="divider"><div class="card__foot"><div class="stats"><span class="stat"><svg aria-hidden="true"><use href="#i-star"/></svg><span class="sr">Rating </span>4.2</span><span class="stat">1.3 k deploys</span><span class="stat"><svg aria-hidden="true"><use href="#i-heart"/></svg>96<span class="sr"> saves</span></span></div><!-- EDIT: Deploy link --><a class="btn btn-outline" href="#">Deploy<span class="sr"> Fabric Lakehouse Connector</span></a></div></article>
+<article class="card card--md item item-10" data-rt="r40 r45" style="--o-pop:7;--o-rat:7;--o-new:7;--o-name:7"><div class="card__top"><span class="overline">Tool / connector</span><span class="heart"><input class="heart__input" type="checkbox" name="save" id="b10" aria-label="Save GitHub PR Summarizer Action"><svg aria-hidden="true"><use href="#i-heart"/></svg></span></div><div class="card__body"><svg class="card__logo" aria-hidden="true"><use href="#i-logo"/></svg><div class="card__text"><h3 class="card__title">GitHub PR Summarizer Action</h3><p class="meta">Software Engineering · Updated Sep 6, 2026</p><p>Posts a plain-English summary and risk notes on every pull request.</p></div></div><ul class="tags" aria-label="Tags"><li class="tag">Software delivery</li><li class="tag">GitHub</li><li class="tag">Free</li></ul><hr class="divider"><div class="card__foot"><div class="stats"><span class="stat"><svg aria-hidden="true"><use href="#i-star"/></svg><span class="sr">Rating </span>4.6</span><span class="stat">4.0 k deploys</span><span class="stat"><svg aria-hidden="true"><use href="#i-heart"/></svg>455<span class="sr"> saves</span></span></div><!-- EDIT: Deploy link --><a class="btn btn-outline" href="#">Deploy<span class="sr"> GitHub PR Summarizer Action</span></a></div></article>
+<article class="card card--md item item-11" data-rt="r40 r45" style="--o-pop:4;--o-rat:9;--o-new:12;--o-name:15"><div class="card__top"><span class="overline">Prompt / skill</span><span class="heart"><input class="heart__input" type="checkbox" name="save" id="b11" aria-label="Save SOW Scoping Prompt Pack"><svg aria-hidden="true"><use href="#i-heart"/></svg></span></div><div class="card__body"><svg class="card__logo" aria-hidden="true"><use href="#i-logo"/></svg><div class="card__text"><h3 class="card__title">SOW Scoping Prompt Pack</h3><p class="meta">Services Delivery · Updated Aug 18, 2026</p><p>Twelve prompts that turn discovery notes into scoped deliverables, assumptions and risks.</p></div></div><ul class="tags" aria-label="Tags"><li class="tag">Sales &amp; proposals</li><li class="tag">InsightGPT</li><li class="tag">Internal</li></ul><hr class="divider"><div class="card__foot"><div class="stats"><span class="stat"><svg aria-hidden="true"><use href="#i-star"/></svg><span class="sr">Rating </span>4.5</span><span class="stat">6.1 k deploys</span><span class="stat"><svg aria-hidden="true"><use href="#i-heart"/></svg>530<span class="sr"> saves</span></span></div><!-- EDIT: Deploy link --><a class="btn btn-outline" href="#">Deploy<span class="sr"> SOW Scoping Prompt Pack</span></a></div></article>
+<article class="card card--md item item-12" data-rt="r40" style="--o-pop:12;--o-rat:11;--o-new:5;--o-name:12"><div class="card__top"><span class="overline">Prompt / skill</span><span class="heart"><input class="heart__input" type="checkbox" name="save" id="b12" aria-label="Save Secure Code Review Prompts"><svg aria-hidden="true"><use href="#i-heart"/></svg></span></div><div class="card__body"><svg class="card__logo" aria-hidden="true"><use href="#i-logo"/></svg><div class="card__text"><h3 class="card__title">Secure Code Review Prompts</h3><p class="meta">Security Practice · Updated Sep 11, 2026</p><p>OWASP-aligned review prompts for client codebases, with a findings template.</p></div></div><ul class="tags" aria-label="Tags"><li class="tag">Security &amp; compliance</li><li class="tag">GitHub</li><li class="tag">InsightGPT</li><li class="tag">Internal</li></ul><hr class="divider"><div class="card__foot"><div class="stats"><span class="stat"><svg aria-hidden="true"><use href="#i-star"/></svg><span class="sr">Rating </span>4.4</span><span class="stat">1.7 k deploys</span><span class="stat"><svg aria-hidden="true"><use href="#i-heart"/></svg>160<span class="sr"> saves</span></span></div><!-- EDIT: Deploy link --><a class="btn btn-outline" href="#">Deploy<span class="sr"> Secure Code Review Prompts</span></a></div></article>
+<article class="card card--md item item-13" data-rt="r40 r45" style="--o-pop:10;--o-rat:4;--o-new:14;--o-name:1"><div class="card__top"><span class="overline">Case study / playbook</span><span class="heart"><input class="heart__input" type="checkbox" name="save" id="b13" aria-label="Save AI Landing Zone Playbook"><svg aria-hidden="true"><use href="#i-heart"/></svg></span></div><div class="card__body"><svg class="card__logo" aria-hidden="true"><use href="#i-logo"/></svg><div class="card__text"><h3 class="card__title">AI Landing Zone Playbook</h3><p class="meta">Cloud Platforms · Updated Aug 5, 2026</p><p>Reference architecture and IaC for a governed Azure OpenAI landing zone. Three client deployments.</p></div></div><ul class="tags" aria-label="Tags"><li class="tag">Security &amp; compliance</li><li class="tag">Azure OpenAI</li><li class="tag">Free</li></ul><hr class="divider"><div class="card__foot"><div class="stats"><span class="stat"><svg aria-hidden="true"><use href="#i-star"/></svg><span class="sr">Rating </span>4.7</span><span class="stat">2.5 k deploys</span><span class="stat"><svg aria-hidden="true"><use href="#i-heart"/></svg>290<span class="sr"> saves</span></span></div><!-- EDIT: Deploy link --><a class="btn btn-outline" href="#">Deploy<span class="sr"> AI Landing Zone Playbook</span></a></div></article>
+<article class="card card--md item item-14" data-rt="r40 r45" style="--o-pop:3;--o-rat:6;--o-new:9;--o-name:5"><div class="card__top"><span class="overline">Case study / playbook</span><span class="heart"><input class="heart__input" type="checkbox" name="save" id="b14" checked aria-label="Save Copilot Adoption Playbook"><svg aria-hidden="true"><use href="#i-heart"/></svg></span></div><div class="card__body"><svg class="card__logo" aria-hidden="true"><use href="#i-logo"/></svg><div class="card__text"><h3 class="card__title">Copilot Adoption Playbook</h3><p class="meta">Modern Workplace · Updated Sep 1, 2026</p><p>Champions program, persona use cases and measurement plan from a 6,000-seat rollout.</p></div></div><ul class="tags" aria-label="Tags"><li class="tag">Productivity</li><li class="tag">Copilot Studio</li><li class="tag">Free</li></ul><hr class="divider"><div class="card__foot"><div class="stats"><span class="stat"><svg aria-hidden="true"><use href="#i-star"/></svg><span class="sr">Rating </span>4.6</span><span class="stat">7.8 k deploys</span><span class="stat"><svg aria-hidden="true"><use href="#i-heart"/></svg>615<span class="sr"> saves</span></span></div><!-- EDIT: Deploy link --><a class="btn btn-outline" href="#">Deploy<span class="sr"> Copilot Adoption Playbook</span></a></div></article>
+<article class="card card--md item item-15" data-rt="r40" style="--o-pop:15;--o-rat:15;--o-new:1;--o-name:3"><div class="card__top"><span class="overline">Model</span><span class="heart"><input class="heart__input" type="checkbox" name="save" id="b15" aria-label="Save Client Sentiment Classifier"><svg aria-hidden="true"><use href="#i-heart"/></svg></span></div><div class="card__body"><svg class="card__logo" aria-hidden="true"><use href="#i-logo"/></svg><div class="card__text"><h3 class="card__title">Client Sentiment Classifier</h3><p class="meta">Data Science Guild · Updated Sep 16, 2026</p><p>Scores support transcripts and survey text for churn risk; feeds the account health dashboard.</p></div></div><ul class="tags" aria-label="Tags"><li class="tag">Client support</li><li class="tag">Microsoft Fabric</li><li class="tag">Internal</li></ul><hr class="divider"><div class="card__foot"><div class="stats"><span class="stat"><svg aria-hidden="true"><use href="#i-star"/></svg><span class="sr">Rating </span>4.1</span><span class="stat">640 deploys</span><span class="stat"><svg aria-hidden="true"><use href="#i-heart"/></svg>58<span class="sr"> saves</span></span></div><!-- EDIT: Deploy link --><a class="btn btn-outline" href="#">Deploy<span class="sr"> Client Sentiment Classifier</span></a></div></article>
+      </div>
+      <div class="empty noresults" id="noresults" hidden>
+        <h2>Nothing matches</h2>
+        <p>Try fewer filters or a different search. If the tool you want is missing, list it.</p>
+        <label class="btn btn-secondary" for="pg-submit">Submit a tool</label>
+      </div>
+      <p class="rescount" aria-live="polite"></p>
+    </div>
+  </div>
+</section>
+
+<!-- =========================== SUBMIT A TOOL =========================== -->
+<section id="submit" class="view" aria-labelledby="submit-title">
+  <div class="band"><div class="wrap">
+    <h1 id="submit-title">Share your solution with the team</h1>
+    <p class="lede">Submit your agent, model, connector, prompt pack or playbook. Approved tools are listed in the new listings queue.</p>
+  </div></div>
+
+  <div class="wrap submit">
+    <!-- EDIT: this form does not send data anywhere yet. "Submit for review" only shows the thank you page
+         (and stays greyed out until the required fields and the checkbox are filled). To collect real
+         submissions, replace the label in .form__actions with <button class="btn btn-solid" type="submit">Submit for review</button>
+         and give <form> an action pointing at your Power Automate HTTP trigger, Microsoft Forms or list endpoint. -->
+    <form class="form">
+      <p class="form__legend"><span class="req" aria-hidden="true">*</span> Required</p>
+      <div class="form__row">
+        <div class="field">
+          <label class="field__label" for="f-name"><span>Name<span class="req" aria-hidden="true">*</span></span><span class="field__hint">The official title of your asset</span></label>
+          <input class="input" id="f-name" pattern=".*\S.*" name="name" type="text" required placeholder="e.g. Contract Clause Reviewer" aria-describedby="err-name">
+          <p class="field__error" id="err-name" role="alert">Enter a name for your tool.</p>
+        </div>
+        <div class="field">
+          <label class="field__label" for="f-type">Type<span class="field__hint">The category of the asset</span></label>
+          <div class="select-wrap"><select class="select" id="f-type" name="type">
+            <option>Agent</option><option>Model</option><option>Tool / connector</option><option>Prompt / skill</option><option>Case study / playbook</option>
+          </select><svg aria-hidden="true"><use href="#i-chevron"/></svg></div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field__label" for="f-summary"><span>One-line summary<span class="req" aria-hidden="true">*</span></span><span class="field__hint">Searchable description of what it does</span></label>
+        <input class="input" id="f-summary" pattern=".*\S.*" name="summary" type="text" required placeholder="e.g. Extracts liability clauses from vendor legal agreements" aria-describedby="err-summary">
+        <p class="field__error" id="err-summary" role="alert">Add a one-line summary of what it does.</p>
+      </div>
+
+      <div class="form__row">
+        <div class="field">
+          <label class="field__label" for="f-problem">Business problem<span class="field__hint">The functional area this asset serves</span></label>
+          <div class="select-wrap"><select class="select" id="f-problem" name="problem">
+            <option>Sales &amp; proposals</option><option>Client support</option><option>Software delivery</option><option>Data &amp; analytics</option><option>Finance &amp; operations</option><option>Security &amp; compliance</option><option>Productivity</option>
+          </select><svg aria-hidden="true"><use href="#i-chevron"/></svg></div>
+        </div>
+        <div class="field">
+          <label class="field__label" for="f-platform">Platform<span class="field__hint">The technology that hosts the solution</span></label>
+          <div class="select-wrap"><select class="select" id="f-platform" name="platform">
+            <option>Azure OpenAI</option><option>Copilot Studio</option><option>AWS Bedrock</option><option>Microsoft Fabric</option><option>ServiceNow</option><option>GitHub</option><option>InsightGPT</option>
+          </select><svg aria-hidden="true"><use href="#i-chevron"/></svg></div>
+        </div>
+      </div>
+
+      <div class="form__row">
+        <div class="field">
+          <label class="field__label" for="f-owner"><span>Owning team<span class="req" aria-hidden="true">*</span></span><span class="field__hint">The team that maintains this asset</span></label>
+          <input class="input" id="f-owner" pattern=".*\S.*" name="owner" type="text" required placeholder="e.g. Data Science Guild" aria-describedby="err-owner">
+          <p class="field__error" id="err-owner" role="alert">Enter the team that maintains this tool.</p>
+        </div>
+        <div class="field">
+          <label class="field__label" for="f-cost">Cost model<span class="field__hint">Funding type or internal charging</span></label>
+          <div class="select-wrap"><select class="select" id="f-cost" name="cost">
+            <option>Internal</option><option>Free</option><option>Consumption</option><option>Licensed</option>
+          </select><svg aria-hidden="true"><use href="#i-chevron"/></svg></div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field__label" for="f-link">Deploy or open link<span class="field__hint">Direct URL to launch the live application</span></label>
+        <input class="input" id="f-link" name="link" type="url" autocomplete="url" placeholder="e.g. https://www.company.com">
+      </div>
+
+      <div class="field">
+        <label class="field__label" for="f-readme">Model card or README<span class="field__hint">Documentation of intended use, how to run it and limitations</span></label>
+        <textarea class="textarea" id="f-readme" name="readme" placeholder="## Intended use&#10;&#10;## How to run&#10;&#10;## Limitations and data tracking"></textarea>
+      </div>
+
+      <label class="confirm"><input type="checkbox" id="f-confirm" name="confirm" required aria-describedby="err-confirm"><span>I confirm this tool has been reviewed for data handling and does not send client data to unapproved services.<span class="req" aria-hidden="true">*</span></span></label>
+      <p class="field__error" id="err-confirm" role="alert">Tick the box to confirm the data handling review.</p>
+
+      <div class="form__actions">
+        <label class="btn btn-solid btn-submit" for="pg-thanks">Submit for review</label>
+        <div class="form__note" role="status">
+          <p class="form__note-title">Still needed before you can submit</p>
+          <p class="miss miss-name">Name: add the official title of your tool</p>
+          <p class="miss miss-summary">One-line summary: add a short description</p>
+          <p class="miss miss-owner">Owning team: add the team that maintains it</p>
+          <p class="miss miss-confirm">Confirmation: tick the box to confirm the data handling review</p>
+        </div>
+      </div>
+    </form>
+
+    <aside class="aside" aria-label="Submission guidance">
+      <div class="panel panel--emphasis">
+        <h2 class="panel__title"><svg aria-hidden="true"><use href="#i-ring"/></svg>How review works</h2>
+        <ol class="steps">
+          <li><strong>Submit</strong><span>Fill in the listing and model card.</span></li>
+          <li><strong>Security check</strong><span>Data handling and endpoint approval, 2 to 3 days.</span></li>
+          <li><strong>COE review</strong><span>Fit, duplication, naming.</span></li>
+          <li><strong>Live</strong><span>Listed, searchable, deployable by any teammate.</span></li>
+        </ol>
+      </div>
+      <div class="panel">
+        <h2 class="panel__title">What makes a good listing</h2>
+        <p>Write the summary as the problem it solves, not the technology. "Drafts first-pass RFP answers from past wins" gets found; "GPT-4 RAG pipeline" doesn't.</p>
+      </div>
+    </aside>
+  </div>
+</section>
+
+<!-- ============================== THANKS ============================== -->
+<section id="thanks" class="view" aria-labelledby="thanks-title">
+  <div class="band"><div class="wrap">
+    <label class="back" for="pg-submit"><svg aria-hidden="true"><use href="#i-back"/></svg>Back to Submit a tool</label>
+    <h1 id="thanks-title">Thanks, your tool is on its way</h1>
+    <p class="lede">The AI COE reviews new listings within five business days.</p>
+  </div></div>
+  <div class="wrap">
+    <div class="card thanks">
+      <div class="card__top"><h2>What happens next</h2><span class="tag">In review</span></div>
+      <p>You'll get a Teams message when it's approved or if we need changes.</p>
+      <div class="thanks__actions">
+        <label class="btn btn-solid" for="pg-submit">Submit another</label>
+        <label class="btn btn-secondary" for="pg-home">Back to home</label>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================== MY ITEMS ============================== -->
+<section id="mine" class="view" aria-labelledby="mine-title">
+  <div class="band"><div class="wrap">
+    <h1 id="mine-title">My items</h1>
+    <p class="lede">Tools you've saved with the heart on the Browse page.</p>
+  </div></div>
+  <div class="wrap stack">
+    <section class="section" aria-labelledby="h-saved">
+      <div class="section__head"><h2 class="section__title" id="h-saved"><svg aria-hidden="true"><use href="#i-ring"/></svg>Saved</h2></div>
+      <div class="results__grid">
+<article class="card card--md saved saved-1"><div class="card__top"><span class="overline">Agent</span><label class="heart heart--on" for="b1"><span class="sr">Remove InsightGPT from saved</span><svg aria-hidden="true"><use href="#i-heart"/></svg></label></div><div class="card__body"><svg class="card__logo" aria-hidden="true"><use href="#i-logo"/></svg><div class="card__text"><h3 class="card__title">InsightGPT</h3><p class="meta">AI COE · Updated Sep 12, 2026</p><p>Secure enterprise assistant for drafting, summarizing and Q&amp;A over approved Insight content.</p></div></div><ul class="tags" aria-label="Tags"><li class="tag">Productivity</li><li class="tag">Azure OpenAI</li><li class="tag">Internal</li></ul><hr class="divider"><div class="card__foot"><div class="stats"><span class="stat"><svg aria-hidden="true"><use href="#i-star"/></svg><span class="sr">Rating </span>4.8</span><span class="stat">12.4 k deploys</span><span class="stat"><svg aria-hidden="true"><use href="#i-heart"/></svg>842<span class="sr"> saves</span></span></div><!-- EDIT: Open link --><a class="btn btn-outline" href="#">Open<span class="sr"> InsightGPT</span></a></div></article>
+<article class="card card--md saved saved-2"><div class="card__top"><span class="overline">Agent</span><label class="heart heart--on" for="b2"><span class="sr">Remove RFP Response Drafter from saved</span><svg aria-hidden="true"><use href="#i-heart"/></svg></label></div><div class="card__body"><svg class="card__logo" aria-hidden="true"><use href="#i-logo"/></svg><div class="card__text"><h3 class="card__title">RFP Response Drafter</h3><p class="meta">Sales Enablement · Updated Sep 3, 2026</p><p>Drafts first-pass RFP answers from past wins and the approved capability library.</p></div></div><ul class="tags" aria-label="Tags"><li class="tag">Sales &amp; proposals</li><li class="tag">Copilot Studio</li><li class="tag">Internal</li></ul><hr class="divider"><div class="card__foot"><div class="stats"><span class="stat"><svg aria-hidden="true"><use href="#i-star"/></svg><span class="sr">Rating </span>4.6</span><span class="stat">3.1 k deploys</span><span class="stat"><svg aria-hidden="true"><use href="#i-heart"/></svg>310<span class="sr"> saves</span></span></div><!-- EDIT: Open link --><a class="btn btn-outline" href="#">Open<span class="sr"> RFP Response Drafter</span></a></div></article>
+<article class="card card--md saved saved-3"><div class="card__top"><span class="overline">Agent</span><label class="heart heart--on" for="b3"><span class="sr">Remove Contract Clause Reviewer from saved</span><svg aria-hidden="true"><use href="#i-heart"/></svg></label></div><div class="card__body"><svg class="card__logo" aria-hidden="true"><use href="#i-logo"/></svg><div class="card__text"><h3 class="card__title">Contract Clause Reviewer</h3><p class="meta">Legal Ops · Updated Aug 21, 2026</p><p>Flags non-standard clauses in client MSAs and SOWs against Insight playbook positions.</p></div></div><ul class="tags" aria-label="Tags"><li class="tag">Finance &amp; operations</li><li class="tag">Azure OpenAI</li><li class="tag">Internal</li></ul><hr class="divider"><div class="card__foot"><div class="stats"><span class="stat"><svg aria-hidden="true"><use href="#i-star"/></svg><span class="sr">Rating </span>4.4</span><span class="stat">980 deploys</span><span class="stat"><svg aria-hidden="true"><use href="#i-heart"/></svg>120<span class="sr"> saves</span></span></div><!-- EDIT: Open link --><a class="btn btn-outline" href="#">Open<span class="sr"> Contract Clause Reviewer</span></a></div></article>
+<article class="card card--md saved saved-4"><div class="card__top"><span class="overline">Agent</span><label class="heart heart--on" for="b4"><span class="sr">Remove ServiceNow Ticket Triage from saved</span><svg aria-hidden="true"><use href="#i-heart"/></svg></label></div><div class="card__body"><svg class="card__logo" aria-hidden="true"><use href="#i-logo"/></svg><div class="card__text"><h3 class="card__title">ServiceNow Ticket Triage</h3><p class="meta">Managed Services · Updated Sep 9, 2026</p><p>Classifies, prioritizes and routes incoming tickets; suggests a first response from KB articles.</p></div></div><ul class="tags" aria-label="Tags"><li class="tag">Client support</li><li class="tag">ServiceNow</li><li class="tag">Azure OpenAI</li><li class="tag">Consumption</li></ul><hr class="divider"><div class="card__foot"><div class="stats"><span class="stat"><svg aria-hidden="true"><use href="#i-star"/></svg><span class="sr">Rating </span>4.5</span><span class="stat">5.6 k deploys</span><span class="stat"><svg aria-hidden="true"><use href="#i-heart"/></svg>402<span class="sr"> saves</span></span></div><!-- EDIT: Open link --><a class="btn btn-outline" href="#">Open<span class="sr"> ServiceNow Ticket Triage</span></a></div></article>
+<article class="card card--md saved saved-5"><div class="card__top"><span class="overline">Model</span><label class="heart heart--on" for="b5"><span class="sr">Remove Insight Embeddings v2 from saved</span><svg aria-hidden="true"><use href="#i-heart"/></svg></label></div><div class="card__body"><svg class="card__logo" aria-hidden="true"><use href="#i-logo"/></svg><div class="card__text"><h3 class="card__title">Insight Embeddings v2</h3><p class="meta">Data Science Guild · Updated Sep 15, 2026</p><p>Domain-tuned embedding model for Insight documents, SOWs and service catalog text.</p></div></div><ul class="tags" aria-label="Tags"><li class="tag">Data &amp; analytics</li><li class="tag">Azure OpenAI</li><li class="tag">Consumption</li></ul><hr class="divider"><div class="card__foot"><div class="stats"><span class="stat"><svg aria-hidden="true"><use href="#i-star"/></svg><span class="sr">Rating </span>4.7</span><span class="stat">2.2 k deploys</span><span class="stat"><svg aria-hidden="true"><use href="#i-heart"/></svg>198<span class="sr"> saves</span></span></div><!-- EDIT: Open link --><a class="btn btn-outline" href="#">Open<span class="sr"> Insight Embeddings v2</span></a></div></article>
+<article class="card card--md saved saved-6"><div class="card__top"><span class="overline">Model</span><label class="heart heart--on" for="b6"><span class="sr">Remove GPT-4.1 (approved endpoint) from saved</span><svg aria-hidden="true"><use href="#i-heart"/></svg></label></div><div class="card__body"><svg class="card__logo" aria-hidden="true"><use href="#i-logo"/></svg><div class="card__text"><h3 class="card__title">GPT-4.1 (approved endpoint)</h3><p class="meta">AI COE · Updated Aug 30, 2026</p><p>Security-reviewed general model endpoint with logging, quotas and no training on inputs.</p></div></div><ul class="tags" aria-label="Tags"><li class="tag">Productivity</li><li class="tag">Azure OpenAI</li><li class="tag">Consumption</li></ul><hr class="divider"><div class="card__foot"><div class="stats"><span class="stat"><svg aria-hidden="true"><use href="#i-star"/></svg><span class="sr">Rating </span>4.9</span><span class="stat">18.9 k deploys</span><span class="stat"><svg aria-hidden="true"><use href="#i-heart"/></svg>1204<span class="sr"> saves</span></span></div><!-- EDIT: Open link --><a class="btn btn-outline" href="#">Open<span class="sr"> GPT-4.1 (approved endpoint)</span></a></div></article>
+<article class="card card--md saved saved-7"><div class="card__top"><span class="overline">Model</span><label class="heart heart--on" for="b7"><span class="sr">Remove Claude Sonnet via Bedrock from saved</span><svg aria-hidden="true"><use href="#i-heart"/></svg></label></div><div class="card__body"><svg class="card__logo" aria-hidden="true"><use href="#i-logo"/></svg><div class="card__text"><h3 class="card__title">Claude Sonnet via Bedrock</h3><p class="meta">Cloud Platforms · Updated Sep 14, 2026</p><p>Approved Bedrock endpoint for coding and long-document tasks in AWS-hosted client work.</p></div></div><ul class="tags" aria-label="Tags"><li class="tag">Software delivery</li><li class="tag">AWS Bedrock</li><li class="tag">Consumption</li></ul><hr class="divider"><div class="card__foot"><div class="stats"><span class="stat"><svg aria-hidden="true"><use href="#i-star"/></svg><span class="sr">Rating </span>4.8</span><span class="stat">4.3 k deploys</span><span class="stat"><svg aria-hidden="true"><use href="#i-heart"/></svg>377<span class="sr"> saves</span></span></div><!-- EDIT: Open link --><a class="btn btn-outline" href="#">Open<span class="sr"> Claude Sonnet via Bedrock</span></a></div></article>
+<article class="card card--md saved saved-8"><div class="card__top"><span class="overline">Tool / connector</span><label class="heart heart--on" for="b8"><span class="sr">Remove SharePoint Knowledge Connector from saved</span><svg aria-hidden="true"><use href="#i-heart"/></svg></label></div><div class="card__body"><svg class="card__logo" aria-hidden="true"><use href="#i-logo"/></svg><div class="card__text"><h3 class="card__title">SharePoint Knowledge Connector</h3><p class="meta">Modern Workplace · Updated Aug 12, 2026</p><p>Grounds any Copilot Studio agent on a SharePoint site with permission trimming preserved.</p></div></div><ul class="tags" aria-label="Tags"><li class="tag">Productivity</li><li class="tag">Copilot Studio</li><li class="tag">Internal</li></ul><hr class="divider"><div class="card__foot"><div class="stats"><span class="stat"><svg aria-hidden="true"><use href="#i-star"/></svg><span class="sr">Rating </span>4.3</span><span class="stat">2.8 k deploys</span><span class="stat"><svg aria-hidden="true"><use href="#i-heart"/></svg>214<span class="sr"> saves</span></span></div><!-- EDIT: Open link --><a class="btn btn-outline" href="#">Open<span class="sr"> SharePoint Knowledge Connector</span></a></div></article>
+<article class="card card--md saved saved-9"><div class="card__top"><span class="overline">Tool / connector</span><label class="heart heart--on" for="b9"><span class="sr">Remove Fabric Lakehouse Connector from saved</span><svg aria-hidden="true"><use href="#i-heart"/></svg></label></div><div class="card__body"><svg class="card__logo" aria-hidden="true"><use href="#i-logo"/></svg><div class="card__text"><h3 class="card__title">Fabric Lakehouse Connector</h3><p class="meta">Data Platforms · Updated Jul 28, 2026</p><p>Query governed Fabric lakehouse tables from agents with row-level security intact.</p></div></div><ul class="tags" aria-label="Tags"><li class="tag">Data &amp; analytics</li><li class="tag">Microsoft Fabric</li><li class="tag">Licensed</li></ul><hr class="divider"><div class="card__foot"><div class="stats"><span class="stat"><svg aria-hidden="true"><use href="#i-star"/></svg><span class="sr">Rating </span>4.2</span><span class="stat">1.3 k deploys</span><span class="stat"><svg aria-hidden="true"><use href="#i-heart"/></svg>96<span class="sr"> saves</span></span></div><!-- EDIT: Open link --><a class="btn btn-outline" href="#">Open<span class="sr"> Fabric Lakehouse Connector</span></a></div></article>
+<article class="card card--md saved saved-10"><div class="card__top"><span class="overline">Tool / connector</span><label class="heart heart--on" for="b10"><span class="sr">Remove GitHub PR Summarizer Action from saved</span><svg aria-hidden="true"><use href="#i-heart"/></svg></label></div><div class="card__body"><svg class="card__logo" aria-hidden="true"><use href="#i-logo"/></svg><div class="card__text"><h3 class="card__title">GitHub PR Summarizer Action</h3><p class="meta">Software Engineering · Updated Sep 6, 2026</p><p>Posts a plain-English summary and risk notes on every pull request.</p></div></div><ul class="tags" aria-label="Tags"><li class="tag">Software delivery</li><li class="tag">GitHub</li><li class="tag">Free</li></ul><hr class="divider"><div class="card__foot"><div class="stats"><span class="stat"><svg aria-hidden="true"><use href="#i-star"/></svg><span class="sr">Rating </span>4.6</span><span class="stat">4.0 k deploys</span><span class="stat"><svg aria-hidden="true"><use href="#i-heart"/></svg>455<span class="sr"> saves</span></span></div><!-- EDIT: Open link --><a class="btn btn-outline" href="#">Open<span class="sr"> GitHub PR Summarizer Action</span></a></div></article>
+<article class="card card--md saved saved-11"><div class="card__top"><span class="overline">Prompt / skill</span><label class="heart heart--on" for="b11"><span class="sr">Remove SOW Scoping Prompt Pack from saved</span><svg aria-hidden="true"><use href="#i-heart"/></svg></label></div><div class="card__body"><svg class="card__logo" aria-hidden="true"><use href="#i-logo"/></svg><div class="card__text"><h3 class="card__title">SOW Scoping Prompt Pack</h3><p class="meta">Services Delivery · Updated Aug 18, 2026</p><p>Twelve prompts that turn discovery notes into scoped deliverables, assumptions and risks.</p></div></div><ul class="tags" aria-label="Tags"><li class="tag">Sales &amp; proposals</li><li class="tag">InsightGPT</li><li class="tag">Internal</li></ul><hr class="divider"><div class="card__foot"><div class="stats"><span class="stat"><svg aria-hidden="true"><use href="#i-star"/></svg><span class="sr">Rating </span>4.5</span><span class="stat">6.1 k deploys</span><span class="stat"><svg aria-hidden="true"><use href="#i-heart"/></svg>530<span class="sr"> saves</span></span></div><!-- EDIT: Open link --><a class="btn btn-outline" href="#">Open<span class="sr"> SOW Scoping Prompt Pack</span></a></div></article>
+<article class="card card--md saved saved-12"><div class="card__top"><span class="overline">Prompt / skill</span><label class="heart heart--on" for="b12"><span class="sr">Remove Secure Code Review Prompts from saved</span><svg aria-hidden="true"><use href="#i-heart"/></svg></label></div><div class="card__body"><svg class="card__logo" aria-hidden="true"><use href="#i-logo"/></svg><div class="card__text"><h3 class="card__title">Secure Code Review Prompts</h3><p class="meta">Security Practice · Updated Sep 11, 2026</p><p>OWASP-aligned review prompts for client codebases, with a findings template.</p></div></div><ul class="tags" aria-label="Tags"><li class="tag">Security &amp; compliance</li><li class="tag">GitHub</li><li class="tag">InsightGPT</li><li class="tag">Internal</li></ul><hr class="divider"><div class="card__foot"><div class="stats"><span class="stat"><svg aria-hidden="true"><use href="#i-star"/></svg><span class="sr">Rating </span>4.4</span><span class="stat">1.7 k deploys</span><span class="stat"><svg aria-hidden="true"><use href="#i-heart"/></svg>160<span class="sr"> saves</span></span></div><!-- EDIT: Open link --><a class="btn btn-outline" href="#">Open<span class="sr"> Secure Code Review Prompts</span></a></div></article>
+<article class="card card--md saved saved-13"><div class="card__top"><span class="overline">Case study / playbook</span><label class="heart heart--on" for="b13"><span class="sr">Remove AI Landing Zone Playbook from saved</span><svg aria-hidden="true"><use href="#i-heart"/></svg></label></div><div class="card__body"><svg class="card__logo" aria-hidden="true"><use href="#i-logo"/></svg><div class="card__text"><h3 class="card__title">AI Landing Zone Playbook</h3><p class="meta">Cloud Platforms · Updated Aug 5, 2026</p><p>Reference architecture and IaC for a governed Azure OpenAI landing zone. Three client deployments.</p></div></div><ul class="tags" aria-label="Tags"><li class="tag">Security &amp; compliance</li><li class="tag">Azure OpenAI</li><li class="tag">Free</li></ul><hr class="divider"><div class="card__foot"><div class="stats"><span class="stat"><svg aria-hidden="true"><use href="#i-star"/></svg><span class="sr">Rating </span>4.7</span><span class="stat">2.5 k deploys</span><span class="stat"><svg aria-hidden="true"><use href="#i-heart"/></svg>290<span class="sr"> saves</span></span></div><!-- EDIT: Open link --><a class="btn btn-outline" href="#">Open<span class="sr"> AI Landing Zone Playbook</span></a></div></article>
+<article class="card card--md saved saved-14"><div class="card__top"><span class="overline">Case study / playbook</span><label class="heart heart--on" for="b14"><span class="sr">Remove Copilot Adoption Playbook from saved</span><svg aria-hidden="true"><use href="#i-heart"/></svg></label></div><div class="card__body"><svg class="card__logo" aria-hidden="true"><use href="#i-logo"/></svg><div class="card__text"><h3 class="card__title">Copilot Adoption Playbook</h3><p class="meta">Modern Workplace · Updated Sep 1, 2026</p><p>Champions program, persona use cases and measurement plan from a 6,000-seat rollout.</p></div></div><ul class="tags" aria-label="Tags"><li class="tag">Productivity</li><li class="tag">Copilot Studio</li><li class="tag">Free</li></ul><hr class="divider"><div class="card__foot"><div class="stats"><span class="stat"><svg aria-hidden="true"><use href="#i-star"/></svg><span class="sr">Rating </span>4.6</span><span class="stat">7.8 k deploys</span><span class="stat"><svg aria-hidden="true"><use href="#i-heart"/></svg>615<span class="sr"> saves</span></span></div><!-- EDIT: Open link --><a class="btn btn-outline" href="#">Open<span class="sr"> Copilot Adoption Playbook</span></a></div></article>
+<article class="card card--md saved saved-15"><div class="card__top"><span class="overline">Model</span><label class="heart heart--on" for="b15"><span class="sr">Remove Client Sentiment Classifier from saved</span><svg aria-hidden="true"><use href="#i-heart"/></svg></label></div><div class="card__body"><svg class="card__logo" aria-hidden="true"><use href="#i-logo"/></svg><div class="card__text"><h3 class="card__title">Client Sentiment Classifier</h3><p class="meta">Data Science Guild · Updated Sep 16, 2026</p><p>Scores support transcripts and survey text for churn risk; feeds the account health dashboard.</p></div></div><ul class="tags" aria-label="Tags"><li class="tag">Client support</li><li class="tag">Microsoft Fabric</li><li class="tag">Internal</li></ul><hr class="divider"><div class="card__foot"><div class="stats"><span class="stat"><svg aria-hidden="true"><use href="#i-star"/></svg><span class="sr">Rating </span>4.1</span><span class="stat">640 deploys</span><span class="stat"><svg aria-hidden="true"><use href="#i-heart"/></svg>58<span class="sr"> saves</span></span></div><!-- EDIT: Open link --><a class="btn btn-outline" href="#">Open<span class="sr"> Client Sentiment Classifier</span></a></div></article>
+        <div class="empty saved-empty"><p>Tap the heart on any listing in Browse to save it here.</p><label class="btn btn-outline" for="pg-browse">Browse the catalog</label></div>
+      </div>
+    </section>
+    <section class="section" aria-labelledby="h-recent">
+      <div class="section__head"><h2 class="section__title" id="h-recent"><svg aria-hidden="true"><use href="#i-ring"/></svg>Recently opened</h2></div>
+      <!-- EDIT: sample content. Without JavaScript this page cannot track what a person opened.
+           Replace with real data (SharePoint list view, Power Automate, or an SPFx web part). -->
+      <div class="results__grid">
+<article class="card card--md recent recent-6"><div class="card__top"><span class="overline">Model</span><label class="heart" for="b6"><span class="sr">Save GPT-4.1 (approved endpoint)</span><svg aria-hidden="true"><use href="#i-heart"/></svg></label></div><div class="card__body"><svg class="card__logo" aria-hidden="true"><use href="#i-logo"/></svg><div class="card__text"><h3 class="card__title">GPT-4.1 (approved endpoint)</h3><p class="meta">AI COE · Updated Aug 30, 2026</p><p>Security-reviewed general model endpoint with logging, quotas and no training on inputs.</p></div></div><ul class="tags" aria-label="Tags"><li class="tag">Productivity</li><li class="tag">Azure OpenAI</li><li class="tag">Consumption</li></ul><hr class="divider"><div class="card__foot"><div class="stats"><span class="stat"><svg aria-hidden="true"><use href="#i-star"/></svg><span class="sr">Rating </span>4.9</span><span class="stat">18.9 k deploys</span><span class="stat"><svg aria-hidden="true"><use href="#i-heart"/></svg>1204<span class="sr"> saves</span></span></div><!-- EDIT: Open link --><a class="btn btn-outline" href="#">Open<span class="sr"> GPT-4.1 (approved endpoint)</span></a></div></article>
+<article class="card card--md recent recent-11"><div class="card__top"><span class="overline">Prompt / skill</span><label class="heart" for="b11"><span class="sr">Save SOW Scoping Prompt Pack</span><svg aria-hidden="true"><use href="#i-heart"/></svg></label></div><div class="card__body"><svg class="card__logo" aria-hidden="true"><use href="#i-logo"/></svg><div class="card__text"><h3 class="card__title">SOW Scoping Prompt Pack</h3><p class="meta">Services Delivery · Updated Aug 18, 2026</p><p>Twelve prompts that turn discovery notes into scoped deliverables, assumptions and risks.</p></div></div><ul class="tags" aria-label="Tags"><li class="tag">Sales &amp; proposals</li><li class="tag">InsightGPT</li><li class="tag">Internal</li></ul><hr class="divider"><div class="card__foot"><div class="stats"><span class="stat"><svg aria-hidden="true"><use href="#i-star"/></svg><span class="sr">Rating </span>4.5</span><span class="stat">6.1 k deploys</span><span class="stat"><svg aria-hidden="true"><use href="#i-heart"/></svg>530<span class="sr"> saves</span></span></div><!-- EDIT: Open link --><a class="btn btn-outline" href="#">Open<span class="sr"> SOW Scoping Prompt Pack</span></a></div></article>
+      </div>
+    </section>
+  </div>
+</section>
+
+</main>
+
+<script>
+/* Optional. If SharePoint blocks inline scripts this never runs: search stays hidden, everything else works. No network requests. */
+(function () {
+  document.documentElement.classList.add('js');
+  var bar = document.getElementById('navbar');
+  function stuck() { if (bar) bar.classList.toggle('is-stuck', window.scrollY >= 56); }
+  window.addEventListener('scroll', stuck, { passive: true }); stuck();
+  /* Close the phone menu and the account menu after choosing a page */
+  var navOpen = document.getElementById('nav-open');
+  Array.prototype.forEach.call(document.querySelectorAll('input[name="page"]'), function (r) {
+    r.addEventListener('change', function () { if (navOpen) navOpen.checked = false; window.scrollTo(0, 0); });
+  });
+  var acct = document.querySelector('.account');
+  document.addEventListener('click', function (e) { if (acct && acct.open && !acct.contains(e.target)) acct.open = false; });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && acct && acct.open) { acct.open = false; acct.querySelector('summary').focus(); } });
+
+  var box = document.getElementById('q');
+  var page = document.getElementById('browse');
+  var none = document.getElementById('noresults');
+  if (!box || !page) return;
+  var items = Array.prototype.slice.call(page.querySelectorAll('.item'));
+  var index = items.map(function (el) {
+    return Array.prototype.map.call(el.querySelectorAll('.overline, .card__text, .tag'), function (n) { return n.textContent; })
+      .join(' ').toLowerCase().replace(/\s+/g, ' ');
+  });
+  function update() {
+    var terms = box.value.toLowerCase().split(/\s+/).filter(Boolean);
+    items.forEach(function (el, i) {
+      el.classList.toggle('nomatch', !terms.every(function (t) { return index[i].indexOf(t) > -1; }));
+    });
+    var shown = items.filter(function (el) { return getComputedStyle(el).display !== 'none'; }).length;
+    if (none) none.hidden = shown > 0;
+  }
+  /* "See all" on Home opens Browse with everything showing, sorted as labelled */
+  var sortSel = document.getElementById('sort');
+  var filterForm = page.querySelector('.filters');
+  Array.prototype.forEach.call(document.querySelectorAll('[data-sort]'), function (link) {
+    link.addEventListener('click', function () {
+      if (sortSel) sortSel.value = link.getAttribute('data-sort');
+      if (filterForm) filterForm.reset();
+      box.value = ''; update(); window.scrollTo(0, 0);
+    });
+  });
+  box.addEventListener('input', update);
+  box.addEventListener('search', update);
+  page.addEventListener('change', update);
+  page.addEventListener('reset', function () { setTimeout(update, 0); });
+  update();
+})();
+</script>
+</body>
+</html>

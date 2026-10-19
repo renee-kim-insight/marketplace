@@ -65,7 +65,7 @@ label{cursor:pointer}
 
 /* ---------- Navbar: two tier header, 112px (agentDirectives.navbarSpec) ---------- */
 /* The whole header is sticky with top:-56px, so the brand row scrolls away and the destination row stays. */
-.navbar{position:sticky;top:-56px;z-index:1100}
+.navbar{position:sticky;top:0;z-index:1100}
 .brand-row{height:56px;background:var(--white);padding:0 var(--page-inline);display:flex;align-items:center;gap:16px}
 .brand{display:flex;align-items:center;gap:12px;min-width:0;flex:1}
 .brand__name{font-size:18px;line-height:24px;font-weight:600;color:var(--carbon);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -107,10 +107,7 @@ label{cursor:pointer}
 .nav-toggle svg{width:20px;height:20px}
 #nav-open:focus-visible ~ header .nav-toggle{box-shadow:var(--focus)}
 @media (max-width:767px){
-  .nav-toggle{display:inline-flex}
-  .dest-row{display:none;flex-direction:column;align-items:stretch;padding:8px var(--page-inline) 16px}
-  #nav-open:checked ~ header .dest-row{display:flex}
-  .nav-item{justify-content:flex-start}
+  .dest-row{flex-wrap:wrap}
 }
 @media (max-width:599px){.account__name{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)} .account__btn{padding-right:8px}}
 
@@ -485,23 +482,6 @@ body:has(#b15:checked) .saved-15{display:flex}
 
 <!-- ===== Navbar: two tier header (rule navbar-two-tier). Delete it if SharePoint already shows one. ===== -->
 <header class="navbar" id="navbar">
-  <div class="brand-row">
-    <div class="brand"><span class="brand__name">Agent Marketplace (AI COE)</span></div>
-    <div class="utility">
-      <label class="nav-toggle" for="nav-open"><span class="sr">Open navigation</span><svg aria-hidden="true"><use href="#i-menu"/></svg></label>
-      <!-- EDIT: account. SharePoint supplies the signed in person; replace the initials, name and links. -->
-      <details class="account">
-        <summary class="account__btn" aria-label="Account menu for Renee Kim"><span class="avatar" aria-hidden="true">RK</span><span class="account__name">Renee Kim</span><svg class="chev" aria-hidden="true"><use href="#i-chevron"/></svg></summary>
-        <div class="menu" role="menu">
-          <p class="menu__meta">Design engineer</p>
-          <a href="#" role="menuitem">Profile</a>
-          <a href="#" role="menuitem">Language: English</a>
-          <hr>
-          <a href="#" role="menuitem">Sign out</a>
-        </div>
-      </details>
-    </div>
-  </div>
   <nav class="dest-row" aria-label="Site">
     <label class="nav-item" for="pg-home">Home</label>
     <label class="nav-item" for="pg-browse">Browse</label>
@@ -798,7 +778,7 @@ body:has(#b15:checked) .saved-15{display:flex}
 (function () {
   document.documentElement.classList.add('js');
   var bar = document.getElementById('navbar');
-  function stuck() { if (bar) bar.classList.toggle('is-stuck', window.scrollY >= 56); }
+  function stuck() { if (bar) bar.classList.toggle('is-stuck', window.scrollY > 0); }
   window.addEventListener('scroll', stuck, { passive: true }); stuck();
   /* Close the phone menu and the account menu after choosing a page */
   var navOpen = document.getElementById('nav-open');
